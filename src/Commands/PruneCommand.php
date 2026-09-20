@@ -20,7 +20,7 @@ final class PruneCommand extends Command
 
     public function handle(Heartbeat $heartbeat, ScheduleInspector $inspector): int
     {
-        $days = (int) ($this->option('days') ?? config('chronoview.prune.keep_days', 14));
+        $days = max(1, (int) ($this->option('days') ?? config('chronoview.prune.keep_days', 14)));
         $cutoff = Carbon::now()->subDays($days);
 
         $runs = TaskRun::query()

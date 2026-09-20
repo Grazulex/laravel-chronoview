@@ -31,6 +31,7 @@ beforeEach(function (): void {
 it('flags a due minute without any run once the grace period is over', function (): void {
     $task = seenTask();
     Carbon::setTestNow('2026-09-20 10:06:30'); // 10:05 due, grace 90s → 10:06:30
+    $task->forceFill(['seen_at' => now()])->save(); // chronoview:check re-syncs before detecting
 
     $missed = $this->detector->detect();
 
@@ -44,10 +45,12 @@ it('waits for the grace period', function (): void {
     $task = seenTask();
     $task->runs()->create(['status' => RunStatus::Success, 'expected_at' => '2026-09-20 10:00:00', 'started_at' => '2026-09-20 10:00:01']);
     Carbon::setTestNow('2026-09-20 10:06:29');
+    $task->forceFill(['seen_at' => now()])->save(); // chronoview:check re-syncs before detecting
 
     expect($this->detector->detect())->toBeEmpty();
 
     Carbon::setTestNow('2026-09-20 10:06:30');
+    $task->forceFill(['seen_at' => now()])->save();
 
     $missed = $this->detector->detect();
 
@@ -56,8 +59,9 @@ it('waits for the grace period', function (): void {
 });
 
 it('detects missed runs of every-minute tasks whose interval is shorter than the grace period', function (): void {
-    seenTask(['expression' => '* * * * *']);
+    $task = seenTask(['expression' => '* * * * *']);
     Carbon::setTestNow('2026-09-20 10:06:30');
+    $task->forceFill(['seen_at' => now()])->save(); // chronoview:check re-syncs before detecting
 
     $missed = $this->detector->detect();
 
@@ -65,6 +69,7 @@ it('detects missed runs of every-minute tasks whose interval is shorter than the
         ->and($missed->first()?->expected_at?->toDateTimeString())->toBe('2026-09-20 10:05:00');
 
     Carbon::setTestNow('2026-09-20 10:07:30');
+    $task->forceFill(['seen_at' => now()])->save();
 
     $missed = $this->detector->detect();
 
@@ -98,8 +103,9 @@ it('does not flag when the task was skipped', function (): void {
 });
 
 it('never flags the same due minute twice', function (): void {
-    seenTask();
+    $task = seenTask();
     Carbon::setTestNow('2026-09-20 10:07:00');
+    $task->forceFill(['seen_at' => now()])->save(); // chronoview:check re-syncs before detecting
 
     $this->detector->detect();
     $this->detector->detect();

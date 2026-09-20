@@ -43,6 +43,20 @@ it('prunes old runs, unseen tasks and old heartbeats', function (): void {
         ->and($heartbeat->hosts()->pluck('hostname')->all())->toBe(['web-1']);
 });
 
+it('clamps --days to a minimum of one instead of pruning everything', function (): void {
+    Carbon::setTestNow('2026-09-20 10:00:00');
+    $task = MonitoredTask::create([
+        'key' => sha1('c'), 'name' => 'c', 'type' => TaskType::Closure, 'expression' => '* * * * *', 'seen_at' => now(),
+    ]);
+    $task->runs()->create(['status' => RunStatus::Success, 'started_at' => now()->subHours(2)]);
+
+    $this->artisan('chronoview:prune', ['--days' => 0])
+        ->expectsOutputToContain('older than 1 days')
+        ->assertSuccessful();
+
+    expect(TaskRun::count())->toBe(1);
+});
+
 it('removes stale output files left by interrupted runs', function (): void {
     $dir = app(ScheduleInspector::class)->outputDirectory();
     File::ensureDirectoryExists($dir);

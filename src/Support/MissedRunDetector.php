@@ -15,7 +15,7 @@ use Illuminate\Support\Collection;
 
 final class MissedRunDetector
 {
-    private const int SEEN_WITHIN_SECONDS = 600;
+    private const int SEEN_WITHIN_SECONDS = 180;
 
     public function __construct(private readonly Recorder $recorder) {}
 
