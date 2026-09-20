@@ -13,7 +13,7 @@ use Grazulex\ChronoView\Models\MonitoredTask;
 use Grazulex\ChronoView\Models\TaskRun;
 use Illuminate\Console\Scheduling\Event;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Event as EventDispatcher;
+use Illuminate\Support\Facades\Event as EventFacade;
 use Throwable;
 
 final class Recorder
@@ -30,14 +30,10 @@ final class Recorder
      */
     public function syncSchedule(): int
     {
-        $now = Carbon::now();
         $count = 0;
 
         foreach ($this->inspector->definitions() as $definition) {
-            MonitoredTask::query()->updateOrCreate(
-                ['key' => $definition->key()],
-                $definition->toArray() + ['seen_at' => $now],
-            );
+            $this->upsertDefinition($definition);
             $count++;
         }
 
@@ -46,12 +42,7 @@ final class Recorder
 
     public function resolveTask(Event $event): MonitoredTask
     {
-        $definition = TaskDefinition::fromEvent($event);
-
-        return MonitoredTask::query()->updateOrCreate(
-            ['key' => $definition->key()],
-            $definition->toArray() + ['seen_at' => Carbon::now()],
-        );
+        return $this->upsertDefinition(TaskDefinition::fromEvent($event));
     }
 
     public function starting(Event $event, RunTrigger $trigger = RunTrigger::Schedule): TaskRun
@@ -108,7 +99,7 @@ final class Recorder
         $task = $this->resolveTask($event);
         $trace = $exception::class . ': ' . $exception->getMessage() . "\n\n" . $exception->getTraceAsString();
 
-        $run = $this->openRun($event);
+        $run = $this->openRunFor($task);
 
         if ($run !== null) {
             $run->forceFill(['exception' => $trace, 'output' => $run->output ?? $this->readOutput($event)]);
@@ -141,7 +132,7 @@ final class Recorder
         ]);
 
         $this->touchTaskAfterClose($task, RunStatus::Failed);
-        EventDispatcher::dispatch(new TaskRunFailed($run->setRelation('task', $task)));
+        EventFacade::dispatch(new TaskRunFailed($run->setRelation('task', $task)));
 
         return $run;
     }
@@ -169,7 +160,7 @@ final class Recorder
         ]);
 
         $this->touchTaskAfterClose($task, RunStatus::Missed);
-        EventDispatcher::dispatch(new TaskRunMissed($run->setRelation('task', $task)));
+        EventFacade::dispatch(new TaskRunMissed($run->setRelation('task', $task)));
 
         return $run;
     }
@@ -185,13 +176,31 @@ final class Recorder
         return $this->close($run, $run->exit_code ?? 1, $this->elapsed($run), $run->output, forceFailed: true);
     }
 
+    private function findTask(Event $event): ?MonitoredTask
+    {
+        return MonitoredTask::query()->where('key', TaskDefinition::fromEvent($event)->key())->first();
+    }
+
     private function openRun(Event $event): ?TaskRun
     {
-        $task = $this->resolveTask($event);
+        $task = $this->findTask($event);
 
+        return $task === null ? null : $this->openRunFor($task);
+    }
+
+    private function openRunFor(MonitoredTask $task): ?TaskRun
+    {
         $run = $task->runs()->where('status', RunStatus::Running->value)->latest('id')->first();
 
         return $run?->setRelation('task', $task);
+    }
+
+    private function upsertDefinition(TaskDefinition $definition): MonitoredTask
+    {
+        return MonitoredTask::query()->updateOrCreate(
+            ['key' => $definition->key()],
+            $definition->toArray() + ['seen_at' => Carbon::now()],
+        );
     }
 
     private function close(TaskRun $run, int $exitCode, ?int $durationMs, ?string $output, bool $forceFailed = false): TaskRun
@@ -212,7 +221,7 @@ final class Recorder
         $this->touchTaskAfterClose($task, $status);
 
         if ($status === RunStatus::Failed) {
-            EventDispatcher::dispatch(new TaskRunFailed($run));
+            EventFacade::dispatch(new TaskRunFailed($run));
         }
 
         return $run;
