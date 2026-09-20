@@ -4,11 +4,16 @@ declare(strict_types=1);
 
 namespace Grazulex\ChronoView;
 
+use Grazulex\ChronoView\Commands\CheckCommand;
+use Grazulex\ChronoView\Commands\InstallCommand;
+use Grazulex\ChronoView\Commands\PruneCommand;
+use Grazulex\ChronoView\Commands\SyncCommand;
 use Grazulex\ChronoView\Listeners\ScheduleEventSubscriber;
 use Grazulex\ChronoView\Support\Heartbeat;
 use Grazulex\ChronoView\Support\MissedRunDetector;
 use Grazulex\ChronoView\Support\Recorder;
 use Grazulex\ChronoView\Support\ScheduleInspector;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\ServiceProvider;
 
@@ -53,5 +58,21 @@ final class ChronoViewServiceProvider extends ServiceProvider
         /** @var Dispatcher $events */
         $events = $this->app['events'];
         $events->subscribe(ScheduleEventSubscriber::class);
+
+        if ($this->app->runningInConsole()) {
+            $this->commands([
+                CheckCommand::class,
+                SyncCommand::class,
+                PruneCommand::class,
+                InstallCommand::class,
+            ]);
+        }
+
+        if (config('chronoview.check.enabled', true)) {
+            $this->callAfterResolving(Schedule::class, function (Schedule $schedule): void {
+                $schedule->command('chronoview:check')->everyMinute()->withoutOverlapping()->name('chronoview:check');
+                $schedule->command('chronoview:prune')->daily()->onOneServer()->name('chronoview:prune');
+            });
+        }
     }
 }
