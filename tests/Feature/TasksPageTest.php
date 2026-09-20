@@ -99,6 +99,23 @@ it('returns 404 for an unknown task', function (): void {
     $this->get('/chronoview/tasks/999')->assertNotFound();
 });
 
+it('excludes output and exception from the history and sparkline queries', function (): void {
+    $this->healthy->runs()->create([
+        'status' => RunStatus::Success, 'started_at' => now()->subMinute(), 'duration_ms' => 10,
+        'output' => 'secret output', 'exception' => null,
+    ]);
+
+    $response = $this->get(route('chronoview.tasks.show', $this->healthy))->assertOk();
+
+    $history = $response->viewData('history');
+    $sparkline = $response->viewData('sparkline');
+
+    expect($history->first()?->getAttributes())->not->toHaveKey('output')
+        ->and($history->first()?->getAttributes())->not->toHaveKey('exception')
+        ->and($sparkline->first()?->getAttributes())->not->toHaveKey('output')
+        ->and($sparkline->first()?->getAttributes())->not->toHaveKey('exception');
+});
+
 it('computes a true median duration for an even number of runs', function (): void {
     foreach ([100, 200, 300, 400] as $i => $durationMs) {
         $this->healthy->runs()->create([

@@ -16,6 +16,7 @@ final class RunController
         $filter = RunStatus::tryFrom((string) $request->query('status', ''));
 
         $runs = TaskRun::query()->with('task')
+            ->select(['id', 'task_id', 'status', 'trigger', 'expected_at', 'started_at', 'finished_at', 'duration_ms', 'exit_code', 'hostname'])
             ->when($filter !== null, fn ($q) => $q->where('status', $filter->value))
             ->latest('id')
             ->paginate(50)

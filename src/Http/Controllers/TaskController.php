@@ -42,7 +42,7 @@ final class TaskController
     public function show(MonitoredTask $task): View
     {
         $since = Carbon::now()->subDays(7);
-        $week = $task->runs()->since($since)->get();
+        $week = $task->runs()->since($since)->select(['id', 'status', 'duration_ms'])->get();
         $finished = $week->whereIn('status', [RunStatus::Success, RunStatus::Failed]);
         $success = $finished->where('status', RunStatus::Success)->count();
         $durations = $finished->pluck('duration_ms')->filter(fn (?int $ms): bool => $ms !== null)->sort()->values();
@@ -60,6 +60,7 @@ final class TaskController
         $sparkline = $task->runs()
             ->whereIn('status', [RunStatus::Success->value, RunStatus::Failed->value])
             ->whereNotNull('duration_ms')
+            ->select(['id', 'status', 'duration_ms', 'started_at'])
             ->latest('id')->limit(40)->get()->reverse()->values();
 
         return view('chronoview::tasks.show', [
@@ -72,7 +73,9 @@ final class TaskController
                 'median_ms' => $medianMs,
             ],
             'sparkline' => $sparkline,
-            'history' => $task->runs()->latest('id')->paginate(25)->withQueryString(),
+            'history' => $task->runs()
+                ->select(['id', 'task_id', 'status', 'trigger', 'expected_at', 'started_at', 'finished_at', 'duration_ms', 'exit_code', 'hostname'])
+                ->latest('id')->paginate(25)->withQueryString(),
             'next' => $task->isPaused() ? null : $task->nextRunAt(),
         ]);
     }

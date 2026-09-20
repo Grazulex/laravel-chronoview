@@ -40,6 +40,15 @@ it('lists runs and filters by status', function (): void {
         ->assertDontSee('cv-badge-success');
 });
 
+it('excludes output and exception from the run list query', function (): void {
+    $response = $this->get(route('chronoview.runs.index'))->assertOk();
+
+    $runs = $response->viewData('runs');
+
+    expect($runs->first()?->getAttributes())->not->toHaveKey('output')
+        ->and($runs->first()?->getAttributes())->not->toHaveKey('exception');
+});
+
 it('shows a run with escaped output and metadata', function (): void {
     $this->get(route('chronoview.runs.show', $this->ok))
         ->assertOk()
