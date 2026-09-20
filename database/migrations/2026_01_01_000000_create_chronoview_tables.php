@@ -63,6 +63,7 @@ return new class extends Migration
         Schema::create($prefix . 'heartbeats', function (Blueprint $table): void {
             $table->string('hostname')->primary();
             $table->timestamp('beat_at');
+            $table->timestamp('notified_at')->nullable();
         });
     }
 

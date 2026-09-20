@@ -29,8 +29,13 @@ final class CheckCommand extends Command
         [$missed, $stale] = $result === false ? [new Collection, new Collection] : $result;
 
         foreach ($heartbeat->deadHosts() as $host) {
-            if ($host->hostname !== $heartbeat->hostname()) {
+            if ($host->hostname === $heartbeat->hostname()) {
+                continue;
+            }
+
+            if ($host->notified_at === null || $host->notified_at->lessThan($host->beat_at)) {
                 $events->dispatch(new SchedulerDown($host->hostname, $host->beat_at));
+                $heartbeat->markNotified($host->hostname);
             }
         }
 

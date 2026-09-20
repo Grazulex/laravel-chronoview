@@ -24,13 +24,14 @@ final class Heartbeat
     }
 
     /**
-     * @return Collection<int, object{hostname: string, beat_at: CarbonImmutable}&\stdClass>
+     * @return Collection<int, object{hostname: string, beat_at: CarbonImmutable, notified_at: ?CarbonImmutable}&\stdClass>
      */
     public function hosts(): Collection
     {
         return $this->table()->orderBy('hostname')->get()->map(fn (object $row): object => (object) [
             'hostname' => (string) $row->hostname,
             'beat_at' => CarbonImmutable::parse((string) $row->beat_at, config('app.timezone', 'UTC')),
+            'notified_at' => $row->notified_at === null ? null : CarbonImmutable::parse((string) $row->notified_at, config('app.timezone', 'UTC')),
         ]);
     }
 
@@ -42,13 +43,18 @@ final class Heartbeat
     }
 
     /**
-     * @return Collection<int, object{hostname: string, beat_at: CarbonImmutable}&\stdClass>
+     * @return Collection<int, object{hostname: string, beat_at: CarbonImmutable, notified_at: ?CarbonImmutable}&\stdClass>
      */
     public function deadHosts(): Collection
     {
         $threshold = Carbon::now()->subSeconds($this->timeout());
 
         return $this->hosts()->filter(fn (object $host): bool => $host->beat_at->lessThan($threshold))->values();
+    }
+
+    public function markNotified(string $hostname): void
+    {
+        $this->table()->where('hostname', $hostname)->update(['notified_at' => Carbon::now()]);
     }
 
     public function forget(string $hostname): void

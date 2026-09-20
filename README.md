@@ -123,6 +123,8 @@ Event::listen(TaskRunMissed::class, fn ($e) => /* $e->run->task->name, $e->run->
 Event::listen(SchedulerDown::class, fn ($e) => /* $e->hostname, $e->lastBeatAt */);
 ```
 
+`SchedulerDown` is dispatched once per outage, when a host's heartbeat first exceeds `check.heartbeat_timeout`; it fires again only after that host has beaten again.
+
 ## Actions
 
 - **Run now** dispatches the queued job `RunScheduledTask`, which replays `starting`/`finished`/`failed` through the same `Recorder` as a real scheduled run (trigger `manual`). It honours `actions.queue_connection` and `actions.queue`.

@@ -70,6 +70,27 @@ it('records the heartbeat of every host even when another host holds the detecti
     }
 });
 
+it('dispatches SchedulerDown once per outage and again after the host beats and dies again', function (): void {
+    Event::fake([SchedulerDown::class]);
+    $heartbeat = app(Heartbeat::class);
+    $heartbeat->beat('web-2');
+    Carbon::setTestNow('2026-09-20 10:20:00');
+
+    $this->artisan('chronoview:check')->assertSuccessful();
+    $this->artisan('chronoview:check')->assertSuccessful();
+
+    Event::assertDispatchedTimes(SchedulerDown::class, 1);
+
+    // web-2 beats again, then dies again: a fresh outage should notify again.
+    Carbon::setTestNow('2026-09-20 10:25:00');
+    $heartbeat->beat('web-2');
+    Carbon::setTestNow('2026-09-20 10:31:00');
+
+    $this->artisan('chronoview:check')->assertSuccessful();
+
+    Event::assertDispatchedTimes(SchedulerDown::class, 2);
+});
+
 it('syncs on demand', function (): void {
     app(Schedule::class)->command('inspire')->hourly();
 
