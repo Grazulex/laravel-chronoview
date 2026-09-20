@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Grazulex\ChronoView;
 
+use Grazulex\ChronoView\Support\ScheduleInspector;
 use Illuminate\Support\ServiceProvider;
 
 final class ChronoViewServiceProvider extends ServiceProvider
@@ -14,6 +15,8 @@ final class ChronoViewServiceProvider extends ServiceProvider
 
         $this->app->singleton(ChronoView::class, fn (): ChronoView => new ChronoView);
         $this->app->alias(ChronoView::class, 'chronoview');
+
+        $this->app->singleton(ScheduleInspector::class, fn ($app): ScheduleInspector => new ScheduleInspector($app));
     }
 
     public function boot(): void
