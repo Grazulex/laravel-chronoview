@@ -6,6 +6,7 @@ namespace Grazulex\ChronoView;
 
 use Grazulex\ChronoView\Listeners\ScheduleEventSubscriber;
 use Grazulex\ChronoView\Support\Heartbeat;
+use Grazulex\ChronoView\Support\MissedRunDetector;
 use Grazulex\ChronoView\Support\Recorder;
 use Grazulex\ChronoView\Support\ScheduleInspector;
 use Illuminate\Contracts\Events\Dispatcher;
@@ -33,6 +34,8 @@ final class ChronoViewServiceProvider extends ServiceProvider
             $app->make(ScheduleInspector::class),
             $app->make(Recorder::class),
         ));
+
+        $this->app->singleton(MissedRunDetector::class, fn ($app): MissedRunDetector => new MissedRunDetector($app->make(Recorder::class)));
     }
 
     public function boot(): void
