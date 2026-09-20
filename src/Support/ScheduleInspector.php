@@ -95,14 +95,19 @@ final class ScheduleInspector
             && preg_match('/chronoview:(check|prune|sync)\b/', (string) $event->command) === 1;
     }
 
+    public function outputDirectory(): string
+    {
+        return $this->app->storagePath('framework/chronoview');
+    }
+
     public function outputPathFor(string $key): string
     {
-        return $this->app->storagePath('framework/chronoview/' . $key . '.log');
+        return $this->outputDirectory() . '/' . $key . '.log';
     }
 
     public function isOurOutput(Event $event): bool
     {
-        return str_starts_with($event->output, $this->app->storagePath('framework/chronoview/'));
+        return str_starts_with($event->output, $this->outputDirectory() . '/');
     }
 
     /**
@@ -137,10 +142,16 @@ final class ScheduleInspector
 
     private function ensureOutputDirectory(): void
     {
-        $dir = $this->app->storagePath('framework/chronoview');
+        $dir = $this->outputDirectory();
 
         if (! is_dir($dir)) {
             @mkdir($dir, 0755, true);
+        }
+
+        $gitignore = $dir . '/.gitignore';
+
+        if (! is_file($gitignore)) {
+            @file_put_contents($gitignore, "*\n!.gitignore\n");
         }
     }
 }

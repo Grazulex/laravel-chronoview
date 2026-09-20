@@ -136,6 +136,8 @@ Event::listen(SchedulerDown::class, fn ($e) => /* $e->hostname, $e->lastBeatAt *
 
 **Does it capture the output of closures?** No — only artisan commands and `exec()` tasks. Laravel redirects their stdout to a file; ChronoView reads it and deletes it. Your own `sendOutputTo()` is never overridden.
 
+Command output is captured in `storage/framework/chronoview/` (git-ignored automatically); `chronoview:prune` removes files older than a day left by interrupted runs.
+
 **Does it slow down the scheduler?** One `UPDATE` at task start, one at the end, and a single `SELECT` of paused keys per `schedule:run` process.
 
 **Which timezone are the times in?** The application timezone by default (shown in the header); click the clock button to switch to your browser's local time. Each task also shows its own scheduling timezone.

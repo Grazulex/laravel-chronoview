@@ -100,6 +100,17 @@ it('exposes the schedule from a non-console context', function (): void {
         ->and($this->inspector->definitions()->first()?->type)->toBe(TaskType::Command);
 });
 
+it('drops a .gitignore in the output directory so the host repository stays clean', function (): void {
+    $this->schedule->command('inspire')->hourly();
+
+    $this->inspector->decorate($this->schedule);
+
+    $gitignore = $this->inspector->outputDirectory() . '/.gitignore';
+
+    expect(File::exists($gitignore))->toBeTrue()
+        ->and(File::get($gitignore))->toBe("*\n!.gitignore\n");
+});
+
 it('constructs the Artisan application when accessed outside the console', function (): void {
     $property = new ReflectionProperty($this->app::class, 'isRunningInConsole');
     $property->setAccessible(true);

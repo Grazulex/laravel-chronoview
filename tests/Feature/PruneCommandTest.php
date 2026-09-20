@@ -7,7 +7,9 @@ use Grazulex\ChronoView\Enums\TaskType;
 use Grazulex\ChronoView\Models\MonitoredTask;
 use Grazulex\ChronoView\Models\TaskRun;
 use Grazulex\ChronoView\Support\Heartbeat;
+use Grazulex\ChronoView\Support\ScheduleInspector;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\File;
 
 it('prunes old runs, unseen tasks and old heartbeats', function (): void {
     config()->set('chronoview.prune.keep_days', 14);
@@ -39,4 +41,19 @@ it('prunes old runs, unseen tasks and old heartbeats', function (): void {
     expect(TaskRun::count())->toBe(1)
         ->and(MonitoredTask::count())->toBe(1)
         ->and($heartbeat->hosts()->pluck('hostname')->all())->toBe(['web-1']);
+});
+
+it('removes stale output files left by interrupted runs', function (): void {
+    $dir = app(ScheduleInspector::class)->outputDirectory();
+    File::ensureDirectoryExists($dir);
+    File::put($dir . '/old.log', 'x');
+    File::put($dir . '/fresh.log', 'y');
+    touch($dir . '/old.log', time() - 2 * 86400);
+
+    $this->artisan('chronoview:prune')->expectsOutputToContain('1 stale output file')->assertSuccessful();
+
+    expect(File::exists($dir . '/old.log'))->toBeFalse()
+        ->and(File::exists($dir . '/fresh.log'))->toBeTrue();
+
+    File::delete($dir . '/fresh.log');
 });
