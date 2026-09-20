@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="auto">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>@yield('title', 'Scheduler') · ChronoView</title>
+    <link rel="stylesheet" href="{{ route('chronoview.asset', 'chronoview.css') }}">
+    <script>
+        (function () {
+            try {
+                var t = localStorage.getItem('chronoview-theme');
+                if (t) document.documentElement.setAttribute('data-theme', t);
+            } catch (e) {}
+        })();
+    </script>
+    <script defer src="{{ route('chronoview.asset', 'alpine.min.js') }}"></script>
+</head>
+<body
+    x-data="chronoview({{ \Grazulex\ChronoView\Facades\ChronoView::refresh() }})"
+    data-refresh="{{ \Grazulex\ChronoView\Facades\ChronoView::refresh() }}"
+>
+    <header class="cv-header">
+        <a class="cv-brand" href="{{ route('chronoview.dashboard') }}">
+            <span class="cv-brand-mark">◔</span> ChronoView
+        </a>
+        <nav class="cv-nav">
+            <a href="{{ route('chronoview.dashboard') }}" @class(['is-active' => request()->routeIs('chronoview.dashboard')])>Overview</a>
+            <a href="{{ route('chronoview.tasks.index') }}" @class(['is-active' => request()->routeIs('chronoview.tasks.*')])>Tasks</a>
+            <a href="{{ route('chronoview.runs.index') }}" @class(['is-active' => request()->routeIs('chronoview.runs.*')])>Runs</a>
+        </nav>
+        <div class="cv-header-tools">
+            <button type="button" class="cv-btn cv-btn-ghost" @click="toggleRefresh()" x-text="refreshLabel()" title="Auto-refresh"></button>
+            <button type="button" class="cv-btn cv-btn-ghost" @click="toggleTheme()" x-text="themeLabel()" title="Theme"></button>
+        </div>
+    </header>
+
+    <main class="cv-main">
+        @include('chronoview::partials.flash')
+        @yield('content')
+    </main>
+
+    <footer class="cv-footer">
+        ChronoView · {{ config('app.name') }} · {{ now()->format('Y-m-d H:i:s') }} {{ config('app.timezone') }}
+    </footer>
+
+    <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('chronoview', (interval) => ({
+                interval: interval,
+                paused: false,
+                timer: null,
+                theme: document.documentElement.getAttribute('data-theme') || 'auto',
+                init() {
+                    try { this.paused = localStorage.getItem('chronoview-refresh') === 'off'; } catch (e) {}
+                    this.schedule();
+                },
+                schedule() {
+                    clearTimeout(this.timer);
+                    if (this.interval > 0 && !this.paused) {
+                        this.timer = setTimeout(() => window.location.reload(), this.interval * 1000);
+                    }
+                },
+                toggleRefresh() {
+                    this.paused = !this.paused;
+                    try { localStorage.setItem('chronoview-refresh', this.paused ? 'off' : 'on'); } catch (e) {}
+                    this.schedule();
+                },
+                refreshLabel() {
+                    if (this.interval <= 0) return 'Refresh off';
+                    return this.paused ? '⏸ Refresh paused' : '↻ Every ' + this.interval + 's';
+                },
+                toggleTheme() {
+                    this.theme = this.theme === 'dark' ? 'light' : (this.theme === 'light' ? 'auto' : 'dark');
+                    document.documentElement.setAttribute('data-theme', this.theme);
+                    try { localStorage.setItem('chronoview-theme', this.theme); } catch (e) {}
+                },
+                themeLabel() {
+                    return this.theme === 'dark' ? '🌙 Dark' : (this.theme === 'light' ? '☀️ Light' : '◐ Auto');
+                },
+            }));
+        });
+    </script>
+</body>
+</html>
