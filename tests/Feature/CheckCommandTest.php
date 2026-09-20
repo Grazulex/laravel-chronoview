@@ -8,7 +8,9 @@ use Grazulex\ChronoView\Events\SchedulerDown;
 use Grazulex\ChronoView\Models\MonitoredTask;
 use Grazulex\ChronoView\Models\TaskRun;
 use Grazulex\ChronoView\Support\Heartbeat;
+use Illuminate\Cache\ArrayStore;
 use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Contracts\Cache\Store;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Event;
@@ -89,6 +91,85 @@ it('dispatches SchedulerDown once per outage and again after the host beats and 
     $this->artisan('chronoview:check')->assertSuccessful();
 
     Event::assertDispatchedTimes(SchedulerDown::class, 2);
+});
+
+it('runs detection without a lock when the cache store has no lock support', function (): void {
+    config()->set('chronoview.check.stale_after', 3600);
+    MonitoredTask::create([
+        'key' => sha1('nolock'), 'name' => 'nolock', 'type' => TaskType::Closure,
+        'expression' => '* * * * *', 'seen_at' => now(), 'created_at' => now()->subDay(),
+    ]);
+
+    $inner = new ArrayStore;
+    $store = new class($inner) implements Store
+    {
+        public function __construct(private ArrayStore $inner) {}
+
+        public function get($key)
+        {
+            return $this->inner->get($key);
+        }
+
+        public function many(array $keys)
+        {
+            return $this->inner->many($keys);
+        }
+
+        public function put($key, $value, $seconds)
+        {
+            return $this->inner->put($key, $value, $seconds);
+        }
+
+        public function touch($key, $seconds)
+        {
+            return $this->inner->touch($key, $seconds);
+        }
+
+        public function putMany(array $values, $seconds)
+        {
+            return $this->inner->putMany($values, $seconds);
+        }
+
+        public function increment($key, $value = 1)
+        {
+            return $this->inner->increment($key, $value);
+        }
+
+        public function decrement($key, $value = 1)
+        {
+            return $this->inner->decrement($key, $value);
+        }
+
+        public function forever($key, $value)
+        {
+            return $this->inner->forever($key, $value);
+        }
+
+        public function forget($key)
+        {
+            return $this->inner->forget($key);
+        }
+
+        public function flush()
+        {
+            return $this->inner->flush();
+        }
+
+        public function getPrefix()
+        {
+            return $this->inner->getPrefix();
+        }
+    };
+
+    Cache::extend('nolock', fn () => Cache::repository($store));
+    config()->set('cache.stores.nolock', ['driver' => 'nolock']);
+    config()->set('cache.default', 'nolock');
+
+    $this->artisan('chronoview:check')
+        ->expectsOutputToContain('no lock support')
+        ->assertSuccessful();
+
+    expect(TaskRun::where('status', RunStatus::Missed->value)->count())->toBeGreaterThanOrEqual(1);
 });
 
 it('syncs on demand', function (): void {

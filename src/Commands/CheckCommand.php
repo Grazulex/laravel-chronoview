@@ -9,6 +9,7 @@ use Grazulex\ChronoView\Support\Heartbeat;
 use Grazulex\ChronoView\Support\MissedRunDetector;
 use Grazulex\ChronoView\Support\Recorder;
 use Illuminate\Console\Command;
+use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -24,8 +25,15 @@ final class CheckCommand extends Command
         $heartbeat->beat();
         $synced = $recorder->syncSchedule();
 
-        $lock = Cache::lock('chronoview:detect', 55);
-        $result = $lock->get(fn (): array => [$detector->detect(), $detector->closeStaleRuns()]);
+        $noLockSupport = ! Cache::getStore() instanceof LockProvider;
+
+        if ($noLockSupport) {
+            $result = [$detector->detect(), $detector->closeStaleRuns()];
+        } else {
+            $lock = Cache::lock('chronoview:detect', 55);
+            $result = $lock->get(fn (): array => [$detector->detect(), $detector->closeStaleRuns()]);
+        }
+
         [$missed, $stale] = $result === false ? [new Collection, new Collection] : $result;
 
         foreach ($heartbeat->deadHosts() as $host) {
@@ -47,11 +55,12 @@ final class CheckCommand extends Command
             ));
         } else {
             $this->components->info(sprintf(
-                'Heartbeat ok · %d %s synced · %d missed · %d stale',
+                'Heartbeat ok · %d %s synced · %d missed · %d stale%s',
                 $synced,
                 $synced === 1 ? 'task' : 'tasks',
                 $missed->count(),
                 $stale->count(),
+                $noLockSupport ? ' (no lock support in the cache store)' : '',
             ));
         }
 
