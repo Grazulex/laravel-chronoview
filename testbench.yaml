@@ -1,0 +1,12 @@
+providers:
+  - Grazulex\ChronoView\ChronoViewServiceProvider
+
+workbench:
+  start: /chronoview
+  user: 1
+  install: true
+  welcome: false
+  build:
+    - migrate:fresh
+
+sync: []
