@@ -190,7 +190,11 @@ final class Recorder
 
     private function openRunFor(MonitoredTask $task): ?TaskRun
     {
-        $run = $task->runs()->where('status', RunStatus::Running->value)->latest('id')->first();
+        $run = $task->runs()
+            ->where('status', RunStatus::Running->value)
+            ->where('hostname', $this->heartbeat->hostname())
+            ->latest('id')
+            ->first();
 
         return $run?->setRelation('task', $task);
     }

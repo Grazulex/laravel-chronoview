@@ -201,6 +201,20 @@ it('truncates long output keeping the end', function (): void {
         ->and(strlen((string) $run?->output))->toBeLessThanOrEqual(100 + strlen("[… truncated …]\n"));
 });
 
+it('does not close a running run started on a different host', function (): void {
+    $event = $this->schedule->command('inspire')->everyFiveMinutes();
+    $task = $this->recorder->resolveTask($event);
+    $run = $task->runs()->create([
+        'status' => RunStatus::Running, 'started_at' => now(), 'hostname' => 'other-host',
+    ]);
+
+    $event->exitCode = 0;
+    $closed = $this->recorder->finished($event, 0.1);
+
+    expect($closed)->toBeNull()
+        ->and($run->fresh()?->status)->toBe(RunStatus::Running);
+});
+
 it('records a manual run without an expected time', function (): void {
     $event = $this->schedule->command('inspire')->everyFiveMinutes();
 
