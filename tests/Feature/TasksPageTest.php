@@ -99,6 +99,15 @@ it('returns 404 for an unknown task', function (): void {
     $this->get('/chronoview/tasks/999')->assertNotFound();
 });
 
+it('shows the description and the source file of a task', function (): void {
+    $this->healthy->update(['description' => 'Display an inspiring quote', 'source' => 'app/Console/Commands/Inspire.php:12']);
+
+    $this->get(route('chronoview.tasks.show', $this->healthy))
+        ->assertOk()
+        ->assertSee('Description: Display an inspiring quote')
+        ->assertSee('app/Console/Commands/Inspire.php:12');
+});
+
 it('excludes output and exception from the history and sparkline queries', function (): void {
     $this->healthy->runs()->create([
         'status' => RunStatus::Success, 'started_at' => now()->subMinute(), 'duration_ms' => 10,

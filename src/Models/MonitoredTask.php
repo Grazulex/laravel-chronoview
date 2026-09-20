@@ -25,6 +25,7 @@ use Illuminate\Support\Carbon;
  * @property string $expression
  * @property string|null $timezone
  * @property string|null $description
+ * @property string|null $source
  * @property bool $run_in_background
  * @property bool $without_overlapping
  * @property bool $on_one_server

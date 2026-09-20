@@ -113,6 +113,36 @@ it('exports the columns of the tasks table', function (): void {
 
     expect(TaskDefinition::fromEvent($event)->toArray())->toHaveKeys([
         'name', 'type', 'command', 'expression', 'timezone', 'description',
-        'run_in_background', 'without_overlapping', 'on_one_server',
+        'run_in_background', 'without_overlapping', 'on_one_server', 'source',
     ]);
+});
+
+it('records the source file of a named closure', function (): void {
+    $event = $this->schedule->call(fn () => null)->daily()->name('nightly');
+    $line = (new ReflectionFunction((fn (): mixed => $this->callback)->call($event)))->getStartLine();
+
+    expect(TaskDefinition::fromEvent($event)->source)->toEndWith('tests/Unit/TaskDefinitionTest.php:' . $line);
+});
+
+it('records the class file of an artisan command', function (): void {
+    // 'inspire' is registered as an Artisan::command() closure by the
+    // application skeleton, not a class — it would resolve to null (see the
+    // "nothing for exec" test below for the equivalent "not found" case).
+    // 'key:generate' is a real framework command class, resolvable via
+    // Kernel::all() without any test-app setup, so it exercises the same
+    // path deterministically.
+    $event = $this->schedule->command('key:generate')->hourly();
+
+    expect(TaskDefinition::fromEvent($event)->source)->toEndWith('Illuminate/Foundation/Console/KeyGenerateCommand.php');
+});
+
+it('records the class file of a job and nothing for exec', function (): void {
+    expect(TaskDefinition::fromEvent($this->schedule->job(ChronoViewFakeJob::class)->daily())->source)->toEndWith('tests/Unit/TaskDefinitionTest.php')
+        ->and(TaskDefinition::fromEvent($this->schedule->exec('ls')->daily())->source)->toBeNull();
+});
+
+it('does not include the source in the key', function (): void {
+    $event = $this->schedule->command('inspire')->hourly();
+
+    expect(TaskDefinition::fromEvent($event)->key())->toBe(sha1('command|artisan inspire|0 * * * *|UTC'));
 });

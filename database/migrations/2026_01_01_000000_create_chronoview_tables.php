@@ -26,6 +26,7 @@ return new class extends Migration
             $table->string('expression', 100);
             $table->string('timezone', 64)->nullable();
             $table->text('description')->nullable();
+            $table->string('source', 500)->nullable();
             $table->boolean('run_in_background')->default(false);
             $table->boolean('without_overlapping')->default(false);
             $table->boolean('on_one_server')->default(false);

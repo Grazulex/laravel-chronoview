@@ -10,11 +10,14 @@ use Grazulex\ChronoView\Enums\TaskType;
 use Illuminate\Console\Application;
 use Illuminate\Console\Scheduling\CallbackEvent;
 use Illuminate\Console\Scheduling\Event;
+use Illuminate\Contracts\Console\Kernel as ConsoleKernel;
 
 use function Illuminate\Support\artisan_binary;
 use function Illuminate\Support\php_binary;
 
+use ReflectionClass;
 use ReflectionFunction;
+use Throwable;
 
 final readonly class TaskDefinition
 {
@@ -28,6 +31,7 @@ final readonly class TaskDefinition
         public bool $runInBackground,
         public bool $withoutOverlapping,
         public bool $onOneServer,
+        public ?string $source = null,
     ) {}
 
     public static function fromEvent(Event $event): self
@@ -56,6 +60,7 @@ final readonly class TaskDefinition
             runInBackground: (bool) $event->runInBackground,
             withoutOverlapping: (bool) $event->withoutOverlapping,
             onOneServer: (bool) $event->onOneServer,
+            source: self::sourceOf($event),
         );
     }
 
@@ -76,10 +81,61 @@ final readonly class TaskDefinition
             'expression' => $this->expression,
             'timezone' => $this->timezone,
             'description' => $this->description,
+            'source' => $this->source,
             'run_in_background' => $this->runInBackground,
             'without_overlapping' => $this->withoutOverlapping,
             'on_one_server' => $this->onOneServer,
         ];
+    }
+
+    public static function sourceOf(Event $event): ?string
+    {
+        try {
+            if ($event instanceof CallbackEvent) {
+                $description = $event->description;
+
+                if (is_string($description) && class_exists($description)) {
+                    $file = (new ReflectionClass($description))->getFileName();
+
+                    return $file !== false ? self::relative($file) : null;
+                }
+
+                $callback = self::callbackOf($event);
+
+                if ($callback instanceof Closure) {
+                    $reflection = new ReflectionFunction($callback);
+
+                    return self::relative((string) $reflection->getFileName()) . ':' . $reflection->getStartLine();
+                }
+
+                if (is_object($callback)) {
+                    $file = (new ReflectionClass($callback::class))->getFileName();
+
+                    return $file !== false ? self::relative($file) : null;
+                }
+
+                return null;
+            }
+
+            $raw = (string) $event->command;
+
+            if (! self::isArtisan($raw)) {
+                return null;
+            }
+
+            $name = explode(' ', self::normalizeCommand($raw))[1] ?? null;
+            $commands = app(ConsoleKernel::class)->all();
+
+            if ($name === null || ! isset($commands[$name])) {
+                return null;
+            }
+
+            $file = (new ReflectionClass($commands[$name]))->getFileName();
+
+            return $file !== false ? self::relative($file) : null;
+        } catch (Throwable) {
+            return null;
+        }
     }
 
     public static function timezoneName(string|DateTimeZone|null $timezone): ?string
@@ -120,10 +176,8 @@ final readonly class TaskDefinition
     {
         if ($callback instanceof Closure) {
             $reflection = new ReflectionFunction($callback);
-            $file = (string) $reflection->getFileName();
-            $relative = str_starts_with($file, base_path()) ? ltrim(substr($file, strlen(base_path())), '/\\') : $file;
 
-            return 'Closure at: ' . $relative . ':' . $reflection->getStartLine();
+            return 'Closure at: ' . self::relative((string) $reflection->getFileName()) . ':' . $reflection->getStartLine();
         }
 
         if (is_string($callback)) {
@@ -135,5 +189,12 @@ final readonly class TaskDefinition
         }
 
         return 'Callback';
+    }
+
+    private static function relative(string $file): string
+    {
+        $base = base_path();
+
+        return str_starts_with($file, $base) ? ltrim(substr($file, strlen($base)), '/\\') : $file;
     }
 }

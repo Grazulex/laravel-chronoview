@@ -9,6 +9,12 @@
             <div class="cv-muted"><a href="{{ route('chronoview.tasks.index') }}">Tasks</a> / {{ $task->type->value }}</div>
             <h1>{{ $task->name }} @include('chronoview::partials.health-badge', ['health' => $task->health()])</h1>
             @if ($task->command && $task->command !== $task->name)<div><code>{{ $task->command }}</code></div>@endif
+            @if (($task->description && $task->description !== $task->name) || $task->source)
+                <div class="cv-meta">
+                    @if ($task->description && $task->description !== $task->name)<span>Description: {{ $task->description }}</span>@endif
+                    @if ($task->source)<span>Source: <code>{{ $task->source }}</code></span>@endif
+                </div>
+            @endif
             <div class="cv-meta">
                 <span title="{{ $task->expression }}">{{ $task->cronDescription() }} · <code>{{ $task->expression }}</code></span>
                 <span>Task timezone: {{ $task->timezone ?? config('app.timezone') }}@if (($task->timezone ?? config('app.timezone')) === config('app.timezone')) (application default)@endif</span>

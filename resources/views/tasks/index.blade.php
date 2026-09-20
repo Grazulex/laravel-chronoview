@@ -26,7 +26,7 @@
                 @forelse ($rows as $row)
                     <tr x-show="q === '' || $el.dataset.name.includes(q.toLowerCase())" data-name="{{ strtolower($row['task']->name . ' ' . $row['task']->command) }}">
                         <td>@include('chronoview::partials.health-badge', ['health' => $row['health']])</td>
-                        <td><a href="{{ route('chronoview.tasks.show', $row['task']) }}"><strong>{{ $row['task']->name }}</strong></a></td>
+                        <td><a href="{{ route('chronoview.tasks.show', $row['task']) }}" title="{{ $row['task']->source }}"><strong>{{ $row['task']->name }}</strong></a></td>
                         <td><code>{{ $row['task']->type->value }}</code></td>
                         <td title="{{ $row['task']->expression }}">{{ $row['task']->cronDescription() }}</td>
                         <td title="{{ Format::exact($row['task']->last_started_at) }}">

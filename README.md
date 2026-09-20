@@ -61,6 +61,8 @@ Unauthenticated visitors get a 403 (not a login redirect), like Horizon.
 |---|---|
 | Scheduler alive/down, 24 h KPIs, tasks needing attention, up next, recent problems | Cron in plain English, 7-day summary, duration sparkline, paginated history, Run now / Pause |
 
+The task page shows the description and the PHP file (and line, for closures) that defines the task.
+
 *(screenshots to add before the LinkedIn / Laravel News post)*
 
 ## How it works
