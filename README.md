@@ -76,12 +76,13 @@ Any earlier hook (e.g. `afterResolving(Schedule::class)`) would fire before `rou
 - `ScheduledTaskSkipped` → `Recorder::skipped()` records a `skipped` row, unless the skip was caused by ChronoView's own pause filter (that one is not worth logging);
 - `ScheduledBackgroundTaskFinished`, fired by `schedule:finish` in a **different process** for `runInBackground` tasks → `Recorder::finished()`'s database lookup is exactly what lets that other process find and close the same `running` row.
 
-**3. The control loop.** ChronoView registers its own `chronoview:check` command, every minute with `withoutOverlapping()`, and `chronoview:prune`, daily with `onOneServer()`. Each run of `chronoview:check`:
-1. records a heartbeat for the current host;
-2. re-syncs every task of the schedule (upsert, `seen_at = now`);
-3. runs `MissedRunDetector::detect()` — for every active task seen recently, it looks at the last due minute older than `check.grace` seconds and flags it `missed` unless a run or a skip already exists for it, or the task was created after that minute (a brand-new task can't have missed a run that predates it);
-4. closes any `running` row older than `check.stale_after` as `failed` (a run that never got its `Finished`/`Failed` event — crashed worker, killed process);
-5. dispatches `SchedulerDown` for any other host whose heartbeat is older than `check.heartbeat_timeout`.
+**3. The control loop.** ChronoView registers its own `chronoview:check` command, every minute, and `chronoview:prune`, daily with `onOneServer()`. Each run of `chronoview:check`:
+1. records a heartbeat for the current host — unconditionally, on every host, every minute;
+2. re-syncs every task of the schedule (upsert, `seen_at = now`) — also unconditionally;
+3. acquires a shared cache lock (`chronoview:detect`, 55 s) so detection runs once per cluster per minute rather than once per host — a shared cache (Redis, database, memcached) is required for this to work correctly across multiple servers; if the lock is held by another host, this run's heartbeat and sync still happened, detection is simply skipped for this minute;
+4. under that lock, runs `MissedRunDetector::detect()` — for every active task seen recently, it looks at the last due minute older than `check.grace` seconds and flags it `missed` unless a run or a skip already exists for it, or the task was created after that minute (a brand-new task can't have missed a run that predates it), or the task was resumed after that minute;
+5. still under the lock, closes any `running` row older than `check.stale_after` as `failed` (a run that never got its `Finished`/`Failed` event — crashed worker, killed process);
+6. dispatches `SchedulerDown` once per outage, for any other host whose heartbeat is older than `check.heartbeat_timeout` and that has not already been notified for this outage.
 
 If the cron itself stops, `chronoview:check` stops too — that failure is caught separately by the heartbeat banner on the dashboard, not by `SchedulerDown` (which only covers *other* hosts in a multi-server setup).
 
@@ -132,7 +133,7 @@ Event::listen(SchedulerDown::class, fn ($e) => /* $e->hostname, $e->lastBeatAt *
 
 ## FAQ
 
-**Why is a run marked missed?** No run and no skip was recorded for that due minute within `check.grace` seconds (90 by default) and the task was already known before that minute. Typical causes: the cron stopped (see the heartbeat banner), `withoutOverlapping` held the task, or the task is filtered by `environments()` on a server where `record.skipped` is disabled.
+**Why is a run marked missed?** No run and no skip was recorded for that due minute within `check.grace` seconds (90 by default) and the task was already known before that minute. Typical causes: the cron stopped (see the heartbeat banner), the task is filtered by `environments()` on a server where `record.skipped` is disabled, or `schedule:run` executes foreground tasks sequentially, so a task whose predecessor runs longer than `grace + 60 s` is flagged missed and then runs anyway — give long tasks `runInBackground()` or raise `check.grace`.
 
 **A task is still `running` after hours.** `chronoview:check` closes runs older than `check.stale_after` (6 h) as failed. Lower it if your tasks are always short.
 
@@ -140,9 +141,11 @@ Event::listen(SchedulerDown::class, fn ($e) => /* $e->hostname, $e->lastBeatAt *
 
 Command output is captured in `storage/framework/chronoview/` (git-ignored automatically); `chronoview:prune` removes files older than a day left by interrupted runs.
 
-**Does it slow down the scheduler?** One `UPDATE` at task start, one at the end, and a single `SELECT` of paused keys per `schedule:run` process.
+**Does it slow down the scheduler?** About seven cheap queries per run (task upsert + run insert at start; task/run lookups + two updates at the end) and one `SELECT` of paused keys per `schedule:run` process.
 
 **Which timezone are the times in?** The application timezone by default (shown in the header); click the clock button to switch to your browser's local time. Each task also shows its own scheduling timezone.
+
+Name your closures (`->name('…')`) — unnamed closures are identified by file and line, so moving code orphans their history.
 
 ## Support This Package
 
