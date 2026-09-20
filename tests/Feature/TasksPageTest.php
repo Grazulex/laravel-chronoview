@@ -98,3 +98,19 @@ it('shows Resume instead of Pause for a paused task', function (): void {
 it('returns 404 for an unknown task', function (): void {
     $this->get('/chronoview/tasks/999')->assertNotFound();
 });
+
+it('computes a true median duration for an even number of runs', function (): void {
+    foreach ([100, 200, 300, 400] as $i => $durationMs) {
+        $this->healthy->runs()->create([
+            'status' => RunStatus::Success,
+            'started_at' => now()->subMinutes(($i + 1) * 5),
+            'finished_at' => now()->subMinutes(($i + 1) * 5)->addMilliseconds($durationMs),
+            'duration_ms' => $durationMs,
+            'exit_code' => 0,
+        ]);
+    }
+
+    $this->get(route('chronoview.tasks.show', $this->healthy))
+        ->assertOk()
+        ->assertSee('250 ms');
+});

@@ -17,23 +17,25 @@ final class TaskController
     {
         $filter = Health::tryFrom((string) $request->query('health', ''));
 
-        $tasks = MonitoredTask::query()->orderBy('name')->get()
+        $allRows = MonitoredTask::query()->orderBy('name')->get()
             ->map(fn (MonitoredTask $task): array => [
                 'task' => $task,
                 'health' => $task->health(),
                 'next' => $task->isPaused() ? null : $task->nextRunAt(),
             ]);
 
+        $counts = $allRows->countBy(fn (array $row): string => $row['health']->value);
+
+        $rows = $allRows;
+
         if ($filter !== null) {
-            $tasks = $tasks->filter(fn (array $row): bool => $row['health'] === $filter);
+            $rows = $rows->filter(fn (array $row): bool => $row['health'] === $filter);
         }
 
-        $tasks = $tasks->values();
-
         return view('chronoview::tasks.index', [
-            'rows' => $tasks,
+            'rows' => $rows->values(),
             'filter' => $filter,
-            'counts' => MonitoredTask::query()->get()->countBy(fn (MonitoredTask $t): string => $t->health()->value),
+            'counts' => $counts,
         ]);
     }
 
@@ -43,7 +45,17 @@ final class TaskController
         $week = $task->runs()->since($since)->get();
         $finished = $week->whereIn('status', [RunStatus::Success, RunStatus::Failed]);
         $success = $finished->where('status', RunStatus::Success)->count();
-        $durations = $finished->pluck('duration_ms')->filter()->sort()->values();
+        $durations = $finished->pluck('duration_ms')->filter(fn (?int $ms): bool => $ms !== null)->sort()->values();
+
+        $medianMs = null;
+
+        if ($durations->isNotEmpty()) {
+            $count = $durations->count();
+            $mid = intdiv($count, 2);
+            $medianMs = $count % 2 === 0
+                ? (int) round(($durations->get($mid - 1) + $durations->get($mid)) / 2)
+                : (int) $durations->get($mid);
+        }
 
         $sparkline = $task->runs()
             ->whereIn('status', [RunStatus::Success->value, RunStatus::Failed->value])
@@ -57,7 +69,7 @@ final class TaskController
                 'success_rate' => $finished->count() > 0 ? round($success / $finished->count() * 100, 1) : null,
                 'failed' => $week->where('status', RunStatus::Failed)->count(),
                 'missed' => $week->where('status', RunStatus::Missed)->count(),
-                'median_ms' => $durations->isEmpty() ? null : (int) $durations->get(intdiv($durations->count(), 2)),
+                'median_ms' => $medianMs,
             ],
             'sparkline' => $sparkline,
             'history' => $task->runs()->latest('id')->paginate(25)->withQueryString(),
