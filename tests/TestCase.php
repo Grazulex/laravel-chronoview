@@ -12,6 +12,37 @@ use Orchestra\Testbench\TestCase as Orchestra;
 
 abstract class TestCase extends Orchestra
 {
+    protected function setUp(): void
+    {
+        // Some tests (e.g. ScheduleIntegrationTest, RunScheduledTaskTest) let the
+        // scheduler spawn a *real* `php artisan ...` subprocess against the
+        // testbench skeleton (vendor/orchestra/testbench-core/laravel). That
+        // skeleton's own bootstrap/autoload.php falls back to a `vendor/autoload.php`
+        // inside the skeleton itself when TESTBENCH_WORKING_PATH isn't set — a path
+        // that only exists there via a `vendor` symlink that testbench's CLI
+        // (`vendor/bin/testbench`) leaves behind after a manual invocation. On a
+        // clean checkout (CI, or any fresh `composer install`) that symlink is
+        // absent, so the subprocess dies instantly with a fatal autoload error and
+        // every scheduled artisan-command test is (correctly) recorded as failed.
+        // Exporting TESTBENCH_WORKING_PATH here makes the subprocess boot the real
+        // package/vendor tree, exactly like `vendor/bin/testbench` does, regardless
+        // of whether that symlink happens to exist.
+        //
+        // It must be set on $_ENV (not just via putenv()): Symfony Process builds
+        // the child's environment from `$_ENV + array_intersect_key(getenv(), $_SERVER)`
+        // (see Process::getDefaultEnv()), so a putenv()-only variable that isn't
+        // already a $_SERVER key is silently dropped before it reaches the
+        // subprocess.
+        if (! is_string(getenv('TESTBENCH_WORKING_PATH'))) {
+            $workingPath = dirname(__DIR__);
+
+            putenv('TESTBENCH_WORKING_PATH=' . $workingPath);
+            $_ENV['TESTBENCH_WORKING_PATH'] = $workingPath;
+        }
+
+        parent::setUp();
+    }
+
     /**
      * @return array<int, class-string>
      */
