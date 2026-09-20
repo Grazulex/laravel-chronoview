@@ -8,7 +8,7 @@
     </div>
     <ul class="cv-hosts">
         @forelse ($hosts as $host)
-            <li title="{{ \Grazulex\ChronoView\Support\Format::exact($host->beat_at) }}">
+            <li>
                 <code>{{ $host->hostname }}</code> <span class="cv-muted">{{ \Grazulex\ChronoView\Support\Format::ago($host->beat_at) }}</span> @include('chronoview::partials.time', ['date' => $host->beat_at])
             </li>
         @empty

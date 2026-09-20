@@ -25,7 +25,9 @@ it('marks every timestamp with an ISO datetime and the server timezone', functio
         ->assertSee('<time class="cv-time" datetime="2026-09-20T09:58:00+00:00"', false)
         ->assertSee('data-exact="2026-09-20 09:58:00"', false)
         ->assertSee('Toggle timezone')
-        ->assertSee('application timezone (UTC)');
+        ->assertSee('application timezone (UTC)')
+        ->assertSee('page rendered')
+        ->assertSee('<time class="cv-time" datetime="2026-09-20T10:00:00+00:00"', false);
 });
 
 it('labels the task timezone explicitly', function (): void {

@@ -44,7 +44,7 @@
     </main>
 
     <footer class="cv-footer">
-        ChronoView · {{ config('app.name') }} · {{ now()->format('Y-m-d H:i:s') }} {{ config('app.timezone') }}
+        ChronoView · {{ config('app.name') }} · @include('chronoview::partials.time', ['date' => now()]) <span class="cv-muted">(page rendered)</span>
     </footer>
 
     <script>
