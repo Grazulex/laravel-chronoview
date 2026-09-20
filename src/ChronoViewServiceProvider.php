@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Grazulex\ChronoView;
 
+use Grazulex\ChronoView\Support\Heartbeat;
+use Grazulex\ChronoView\Support\Recorder;
 use Grazulex\ChronoView\Support\ScheduleInspector;
 use Illuminate\Support\ServiceProvider;
 
@@ -17,6 +19,12 @@ final class ChronoViewServiceProvider extends ServiceProvider
         $this->app->alias(ChronoView::class, 'chronoview');
 
         $this->app->singleton(ScheduleInspector::class, fn ($app): ScheduleInspector => new ScheduleInspector($app));
+
+        $this->app->singleton(Heartbeat::class, fn ($app): Heartbeat => new Heartbeat($app['db']));
+        $this->app->singleton(Recorder::class, fn ($app): Recorder => new Recorder(
+            $app->make(ScheduleInspector::class),
+            $app->make(Heartbeat::class),
+        ));
     }
 
     public function boot(): void
