@@ -116,6 +116,25 @@ it('ignores paused tasks, tasks not seen recently and tasks created after the du
     expect($this->detector->detect())->toBeEmpty();
 });
 
+it('does not flag a false missed run right after resuming a paused task', function (): void {
+    Carbon::setTestNow('2026-09-20 15:00:00');
+    seenTask(['expression' => '0 3 * * *', 'resumed_at' => '2026-09-20 15:00:00']);
+    Carbon::setTestNow('2026-09-20 15:01:30');
+
+    expect($this->detector->detect())->toBeEmpty();
+});
+
+it('still flags a missed run when the task was never resumed', function (): void {
+    Carbon::setTestNow('2026-09-20 15:00:00');
+    seenTask(['expression' => '0 3 * * *', 'resumed_at' => null]);
+    Carbon::setTestNow('2026-09-20 15:01:30');
+
+    $missed = $this->detector->detect();
+
+    expect($missed)->toHaveCount(1)
+        ->and($missed->first()?->expected_at?->toDateTimeString())->toBe('2026-09-20 03:00:00');
+});
+
 it('closes stale running runs as failed', function (): void {
     config()->set('chronoview.check.stale_after', 3600);
     $task = seenTask();

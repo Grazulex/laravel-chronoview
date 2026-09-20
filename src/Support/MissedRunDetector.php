@@ -40,6 +40,10 @@ final class MissedRunDetector
                 continue;
             }
 
+            if ($task->resumed_at !== null && $task->resumed_at->greaterThan($due)) {
+                continue;
+            }
+
             if ($this->hasRunFor($task, $due, $grace) || $this->alreadyMissed($task, $due)) {
                 continue;
             }

@@ -39,7 +39,7 @@ final class ActionController
     {
         abort_unless((bool) config('chronoview.actions.pause', true), 403);
 
-        $task->forceFill(['paused_at' => null])->save();
+        $task->forceFill(['paused_at' => null, 'resumed_at' => Carbon::now()])->save();
         $this->inspector->forgetPausedKeys();
 
         return $this->back($task, "“{$task->name}” resumed.");

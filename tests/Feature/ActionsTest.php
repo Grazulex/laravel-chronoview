@@ -47,7 +47,8 @@ it('pauses and resumes a task', function (): void {
     $this->post(route('chronoview.tasks.resume', $this->task))
         ->assertRedirect(route('chronoview.tasks.show', $this->task));
 
-    expect($this->task->fresh()?->isPaused())->toBeFalse();
+    expect($this->task->fresh()?->isPaused())->toBeFalse()
+        ->and($this->task->fresh()?->resumed_at)->not->toBeNull();
 });
 
 it('refuses pause when disabled', function (): void {

@@ -30,6 +30,7 @@ return new class extends Migration
             $table->boolean('without_overlapping')->default(false);
             $table->boolean('on_one_server')->default(false);
             $table->timestamp('paused_at')->nullable();
+            $table->timestamp('resumed_at')->nullable();
             $table->timestamp('last_started_at')->nullable();
             $table->timestamp('last_finished_at')->nullable();
             $table->string('last_status', 20)->nullable();

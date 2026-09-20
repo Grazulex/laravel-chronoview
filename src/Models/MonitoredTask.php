@@ -29,6 +29,7 @@ use Illuminate\Support\Carbon;
  * @property bool $without_overlapping
  * @property bool $on_one_server
  * @property Carbon|null $paused_at
+ * @property Carbon|null $resumed_at
  * @property Carbon|null $last_started_at
  * @property Carbon|null $last_finished_at
  * @property RunStatus|null $last_status
@@ -47,6 +48,7 @@ class MonitoredTask extends Model
         'without_overlapping' => 'boolean',
         'on_one_server' => 'boolean',
         'paused_at' => 'datetime',
+        'resumed_at' => 'datetime',
         'last_started_at' => 'datetime',
         'last_finished_at' => 'datetime',
         'last_status' => RunStatus::class,
