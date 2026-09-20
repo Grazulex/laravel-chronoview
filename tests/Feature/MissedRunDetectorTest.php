@@ -41,10 +41,36 @@ it('flags a due minute without any run once the grace period is over', function 
 });
 
 it('waits for the grace period', function (): void {
-    seenTask();
+    $task = seenTask();
+    $task->runs()->create(['status' => RunStatus::Success, 'expected_at' => '2026-09-20 10:00:00', 'started_at' => '2026-09-20 10:00:01']);
     Carbon::setTestNow('2026-09-20 10:06:29');
 
     expect($this->detector->detect())->toBeEmpty();
+
+    Carbon::setTestNow('2026-09-20 10:06:30');
+
+    $missed = $this->detector->detect();
+
+    expect($missed)->toHaveCount(1)
+        ->and($missed->first()?->expected_at?->toDateTimeString())->toBe('2026-09-20 10:05:00');
+});
+
+it('detects missed runs of every-minute tasks whose interval is shorter than the grace period', function (): void {
+    seenTask(['expression' => '* * * * *']);
+    Carbon::setTestNow('2026-09-20 10:06:30');
+
+    $missed = $this->detector->detect();
+
+    expect($missed)->toHaveCount(1)
+        ->and($missed->first()?->expected_at?->toDateTimeString())->toBe('2026-09-20 10:05:00');
+
+    Carbon::setTestNow('2026-09-20 10:07:30');
+
+    $missed = $this->detector->detect();
+
+    expect($missed)->toHaveCount(1)
+        ->and($missed->first()?->expected_at?->toDateTimeString())->toBe('2026-09-20 10:06:00')
+        ->and(TaskRun::where('status', RunStatus::Missed->value)->count())->toBe(2);
 });
 
 it('does not flag when a run matches the due minute', function (): void {

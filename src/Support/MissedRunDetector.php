@@ -34,11 +34,7 @@ final class MissedRunDetector
             ->get();
 
         foreach ($tasks as $task) {
-            $due = $task->previousDueAt($now);
-
-            if ($due->diffInSeconds($now) < $grace) {
-                continue;
-            }
+            $due = $task->previousDueAt($now->subSeconds($grace));
 
             if ($task->created_at !== null && $task->created_at->greaterThan($due)) {
                 continue;
