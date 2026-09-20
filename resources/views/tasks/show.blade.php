@@ -11,8 +11,8 @@
             @if ($task->command && $task->command !== $task->name)<div><code>{{ $task->command }}</code></div>@endif
             <div class="cv-meta">
                 <span title="{{ $task->expression }}">{{ $task->cronDescription() }} · <code>{{ $task->expression }}</code></span>
-                <span>{{ $task->timezone ?? config('app.timezone') }}</span>
-                <span>Next: <span class="cv-mono">{{ $next ? Format::exact($next) : '—' }}</span></span>
+                <span>Task timezone: {{ $task->timezone ?? config('app.timezone') }}@if (($task->timezone ?? config('app.timezone')) === config('app.timezone')) (application default)@endif</span>
+                <span>Next: @include('chronoview::partials.time', ['date' => $next])</span>
                 <span class="cv-flags">
                     @if ($task->run_in_background)<span>background</span>@endif
                     @if ($task->without_overlapping)<span>without overlapping</span>@endif
@@ -67,8 +67,8 @@
                 @forelse ($history as $run)
                     <tr>
                         <td>@include('chronoview::partials.status-badge', ['status' => $run->status])</td>
-                        <td class="cv-mono">{{ Format::exact($run->expected_at) }}</td>
-                        <td class="cv-mono">{{ Format::exact($run->started_at) }}</td>
+                        <td>@include('chronoview::partials.time', ['date' => $run->expected_at])</td>
+                        <td>@include('chronoview::partials.time', ['date' => $run->started_at])</td>
                         <td class="cv-num">{{ Format::duration($run->duration_ms) }}</td>
                         <td class="cv-num">{{ $run->exit_code ?? '—' }}</td>
                         <td><code>{{ $run->hostname ?? '—' }}</code></td>

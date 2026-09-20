@@ -35,7 +35,7 @@
                             @endif
                             <span class="cv-muted">{{ Format::ago($row['task']->last_started_at) }}</span>
                         </td>
-                        <td class="cv-mono">{{ $row['next'] ? Format::exact($row['next']) : '—' }}</td>
+                        <td>@include('chronoview::partials.time', ['date' => $row['next']])</td>
                         <td><a class="cv-btn cv-btn-ghost" href="{{ route('chronoview.tasks.show', $row['task']) }}">Details →</a></td>
                     </tr>
                 @empty

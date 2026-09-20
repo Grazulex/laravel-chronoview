@@ -34,6 +34,8 @@ h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: v
 .cv-header-tools { margin-left: auto; display: flex; gap: 8px; }
 .cv-main { max-width: 1200px; margin: 0 auto; padding: 24px 16px 48px; display: grid; gap: 16px; }
 .cv-footer { text-align: center; color: var(--cv-muted); padding: 16px; font-size: 12px; }
+.cv-tz-note { max-width: 1200px; margin: 8px auto -8px; padding: 0 16px; color: var(--cv-muted); font-size: 12.5px; }
+time.cv-time { font-family: var(--cv-mono); font-size: 12.5px; font-variant-numeric: tabular-nums; }
 
 .cv-btn { font: inherit; border: 1px solid var(--cv-border); background: var(--cv-surface); color: var(--cv-text); padding: 6px 12px; border-radius: 6px; cursor: pointer; }
 .cv-btn:hover { border-color: var(--cv-accent); }

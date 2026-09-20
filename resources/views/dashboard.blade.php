@@ -40,7 +40,7 @@
             <h2>Up next</h2>
             @forelse ($upNext as $row)
                 <a class="cv-row" href="{{ route('chronoview.tasks.show', $row['task']) }}">
-                    <span class="cv-mono">{{ Format::exact($row['at']) }}</span>
+                    @include('chronoview::partials.time', ['date' => $row['at']])
                     <span class="cv-row-title">{{ $row['task']->name }}</span>
                     <span class="cv-muted">{{ $row['task']->cronDescription() }}</span>
                 </a>

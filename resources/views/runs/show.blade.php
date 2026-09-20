@@ -11,9 +11,9 @@
             <div class="cv-meta">
                 <span>Trigger: {{ $run->trigger->value }}</span>
                 <span>Host: <code>{{ $run->hostname ?? '—' }}</code></span>
-                <span>Expected: <span class="cv-mono">{{ Format::exact($run->expected_at) }}</span></span>
-                <span>Started: <span class="cv-mono">{{ Format::exact($run->started_at) }}</span></span>
-                <span>Finished: <span class="cv-mono">{{ Format::exact($run->finished_at) }}</span></span>
+                <span>Expected: @include('chronoview::partials.time', ['date' => $run->expected_at])</span>
+                <span>Started: @include('chronoview::partials.time', ['date' => $run->started_at])</span>
+                <span>Finished: @include('chronoview::partials.time', ['date' => $run->finished_at])</span>
                 <span>Duration: {{ Format::duration($run->duration_ms) }}</span>
                 <span>Exit code: {{ $run->exit_code ?? '—' }}</span>
                 <span>Memory peak: {{ Format::bytes($run->memory_peak) }}</span>

@@ -18,6 +18,7 @@
 <body
     x-data="chronoview({{ \Grazulex\ChronoView\Facades\ChronoView::refresh() }})"
     data-refresh="{{ \Grazulex\ChronoView\Facades\ChronoView::refresh() }}"
+    data-server-tz="{{ config('app.timezone') }}"
 >
     <header class="cv-header">
         <a class="cv-brand" href="{{ route('chronoview.dashboard') }}">
@@ -30,9 +31,12 @@
         </nav>
         <div class="cv-header-tools">
             <button type="button" class="cv-btn cv-btn-ghost" @click="toggleRefresh()" x-text="refreshLabel()" title="Auto-refresh" aria-label="Toggle auto-refresh"></button>
+            <button type="button" class="cv-btn cv-btn-ghost" @click="toggleTz()" x-text="tzLabel()" title="Timezone" aria-label="Toggle timezone"></button>
             <button type="button" class="cv-btn cv-btn-ghost" @click="toggleTheme()" x-text="themeLabel()" title="Theme" aria-label="Toggle theme"></button>
         </div>
     </header>
+
+    <p class="cv-tz-note" x-text="tzNote()">Times are shown in the application timezone ({{ config('app.timezone') }}). Switch to your local time with the clock button.</p>
 
     <main class="cv-main">
         @include('chronoview::partials.flash')
@@ -50,9 +54,14 @@
                 paused: false,
                 timer: null,
                 theme: document.documentElement.getAttribute('data-theme') || 'auto',
+                tz: 'server',
+                serverTz: document.body.dataset.serverTz || 'UTC',
+                localTz: (Intl.DateTimeFormat().resolvedOptions().timeZone || 'local'),
                 init() {
                     try { this.paused = localStorage.getItem('chronoview-refresh') === 'off'; } catch (e) {}
                     this.schedule();
+                    try { this.tz = localStorage.getItem('chronoview-tz') === 'local' ? 'local' : 'server'; } catch (e) {}
+                    this.applyTz();
                 },
                 schedule() {
                     clearTimeout(this.timer);
@@ -76,6 +85,26 @@
                 },
                 themeLabel() {
                     return this.theme === 'dark' ? '🌙 Dark' : (this.theme === 'light' ? '☀️ Light' : '◐ Auto');
+                },
+                applyTz() {
+                    document.querySelectorAll('time.cv-time').forEach((el) => {
+                        if (this.tz === 'server') { el.textContent = el.dataset.exact; return; }
+                        const d = new Date(el.getAttribute('datetime'));
+                        if (isNaN(d)) { el.textContent = el.dataset.exact; return; }
+                        const p = (n) => String(n).padStart(2, '0');
+                        el.textContent = d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds());
+                    });
+                },
+                toggleTz() {
+                    this.tz = this.tz === 'server' ? 'local' : 'server';
+                    try { localStorage.setItem('chronoview-tz', this.tz); } catch (e) {}
+                    this.applyTz();
+                },
+                tzLabel() { return this.tz === 'server' ? '🕒 Server (' + this.serverTz + ')' : '🕒 Local (' + this.localTz + ')'; },
+                tzNote() {
+                    return this.tz === 'server'
+                        ? 'Times are shown in the application timezone (' + this.serverTz + '). Switch to your local time with the clock button.'
+                        : 'Times are shown in your local timezone (' + this.localTz + '). Server timezone: ' + this.serverTz + '.';
                 },
             }));
         });

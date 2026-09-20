@@ -21,8 +21,8 @@
                     <tr>
                         <td>@include('chronoview::partials.status-badge', ['status' => $run->status])</td>
                         <td><a href="{{ route('chronoview.tasks.show', $run->task) }}"><strong>{{ $run->task->name }}</strong></a></td>
-                        <td class="cv-mono">{{ Format::exact($run->expected_at) }}</td>
-                        <td class="cv-mono">{{ Format::exact($run->started_at) }}</td>
+                        <td>@include('chronoview::partials.time', ['date' => $run->expected_at])</td>
+                        <td>@include('chronoview::partials.time', ['date' => $run->started_at])</td>
                         <td class="cv-num">{{ Format::duration($run->duration_ms) }}</td>
                         <td class="cv-num">{{ $run->exit_code ?? '—' }}</td>
                         <td><code>{{ $run->hostname ?? '—' }}</code></td>
