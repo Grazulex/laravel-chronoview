@@ -13,6 +13,7 @@ All notable changes to this project will be documented in this file.
 - per-host scheduler heartbeat with a red banner when `schedule:run` stopped
 - dashboard: overview, tasks list with health filter, task detail with sparkline and paginated history, run detail with output and exception
 - Run now (queued job) and Pause / Resume without redeploying
-- public events `TaskRunFailed`, `TaskRunMissed`, `SchedulerDown`
+- public events `TaskRunFailed`, `TaskRunMissed`, `SchedulerDown` — `SchedulerDown` is dispatched once per outage, and again only after the host has beaten again
 - commands `chronoview:install`, `chronoview:sync`, `chronoview:check`, `chronoview:prune`
+- Resume records `resumed_at` so a task freshly unpaused is never flagged with a false missed run for the minutes it was paused
 - embedded Alpine.js 3.17.3, no CDN
