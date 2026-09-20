@@ -71,7 +71,7 @@ h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: v
 .cv-badge { display: inline-block; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; padding: 2px 8px; border-radius: 999px; border: 1px solid transparent; white-space: nowrap; }
 .cv-badge-success, .cv-badge-healthy { color: var(--cv-ok); border-color: var(--cv-ok); }
 .cv-badge-failed, .cv-badge-unhealthy { color: var(--cv-bad); border-color: var(--cv-bad); }
-.cv-badge-missed { color: var(--cv-bad); background: var(--cv-bad); color: #fff; }
+.cv-badge-missed { background: var(--cv-bad); color: #fff; }
 .cv-badge-running { color: var(--cv-info); border-color: var(--cv-info); }
 .cv-badge-skipped, .cv-badge-unknown { color: var(--cv-neutral); border-color: var(--cv-neutral); }
 .cv-badge-paused { color: var(--cv-warn); border-color: var(--cv-warn); }

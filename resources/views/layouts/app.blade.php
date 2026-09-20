@@ -29,8 +29,8 @@
             <a href="{{ route('chronoview.runs.index') }}" @class(['is-active' => request()->routeIs('chronoview.runs.*')])>Runs</a>
         </nav>
         <div class="cv-header-tools">
-            <button type="button" class="cv-btn cv-btn-ghost" @click="toggleRefresh()" x-text="refreshLabel()" title="Auto-refresh"></button>
-            <button type="button" class="cv-btn cv-btn-ghost" @click="toggleTheme()" x-text="themeLabel()" title="Theme"></button>
+            <button type="button" class="cv-btn cv-btn-ghost" @click="toggleRefresh()" x-text="refreshLabel()" title="Auto-refresh" aria-label="Toggle auto-refresh"></button>
+            <button type="button" class="cv-btn cv-btn-ghost" @click="toggleTheme()" x-text="themeLabel()" title="Theme" aria-label="Toggle theme"></button>
         </div>
     </header>
 
