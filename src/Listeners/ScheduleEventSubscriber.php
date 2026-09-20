@@ -7,7 +7,6 @@ namespace Grazulex\ChronoView\Listeners;
 use Grazulex\ChronoView\Support\Recorder;
 use Grazulex\ChronoView\Support\ScheduleInspector;
 use Grazulex\ChronoView\Support\TaskDefinition;
-use Illuminate\Console\Events\ArtisanStarting;
 use Illuminate\Console\Events\CommandStarting;
 use Illuminate\Console\Events\ScheduledBackgroundTaskFinished;
 use Illuminate\Console\Events\ScheduledTaskFailed;
@@ -36,7 +35,6 @@ final class ScheduleEventSubscriber
     public function subscribe(Dispatcher $events): array
     {
         return [
-            ArtisanStarting::class => 'onArtisanStarting',
             CommandStarting::class => 'onCommandStarting',
             ScheduledTaskStarting::class => 'onTaskStarting',
             ScheduledTaskFinished::class => 'onTaskFinished',
@@ -44,21 +42,6 @@ final class ScheduleEventSubscriber
             ScheduledTaskSkipped::class => 'onTaskSkipped',
             ScheduledBackgroundTaskFinished::class => 'onBackgroundTaskFinished',
         ];
-    }
-
-    /**
-     * `CommandStarting` (below) is Laravel's documented hook for this, but the
-     * framework only bridges Symfony's ConsoleEvents::COMMAND to it outside of
-     * `Application::runningUnitTests()` (see `Kernel::__construct()`'s `booted()`
-     * callback) — so under Testbench it never fires at all. `ArtisanStarting` is
-     * dispatched unconditionally, once, right when the Artisan application is
-     * built and before any command runs, so it is used as the reliable trigger;
-     * `decorate()` is idempotent (WeakMap-guarded), so running both listeners is
-     * harmless in the environments where `CommandStarting` does fire.
-     */
-    public function onArtisanStarting(ArtisanStarting $event): void
-    {
-        $this->guard(fn () => $this->inspector->decorate($this->app->make(Schedule::class)));
     }
 
     public function onCommandStarting(CommandStarting $event): void
