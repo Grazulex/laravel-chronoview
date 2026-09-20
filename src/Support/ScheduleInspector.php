@@ -10,6 +10,7 @@ use Illuminate\Console\Scheduling\Event;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Contracts\Console\Kernel as ConsoleKernel;
 use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Foundation\Console\Kernel;
 use Illuminate\Support\Collection;
 use Throwable;
 use WeakMap;
@@ -28,14 +29,19 @@ final class ScheduleInspector
     }
 
     /**
-     * The fully loaded schedule, even from HTTP: bootstrapping the console kernel
-     * requires and executes routes/console.php, where `Schedule::command(...)`
-     * calls register against the already-resolved Schedule singleton.
+     * The fully loaded schedule, even from HTTP: `Kernel::all()` bootstraps the
+     * console kernel (requiring routes/console.php) and constructs the Artisan
+     * application, which replays the `Artisan::starting` callbacks that
+     * `ApplicationBuilder::withSchedule()` registers itself through — those
+     * closures never run otherwise, since `bootstrap()` alone never
+     * instantiates Artisan.
      */
     public function schedule(): Schedule
     {
         if (! $this->app->runningInConsole()) {
-            $this->app->make(ConsoleKernel::class)->bootstrap();
+            /** @var Kernel $kernel */
+            $kernel = $this->app->make(ConsoleKernel::class);
+            $kernel->all();
         }
 
         return $this->app->make(Schedule::class);

@@ -6,6 +6,7 @@ use Grazulex\ChronoView\Enums\TaskType;
 use Grazulex\ChronoView\Models\MonitoredTask;
 use Grazulex\ChronoView\Support\ScheduleInspector;
 use Grazulex\ChronoView\Support\TaskDefinition;
+use Illuminate\Console\Application as ConsoleApplication;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Facades\File;
 
@@ -97,4 +98,26 @@ it('exposes the schedule from a non-console context', function (): void {
     expect($this->inspector->schedule())->toBe($this->schedule)
         ->and($this->inspector->events())->toHaveCount(1)
         ->and($this->inspector->definitions()->first()?->type)->toBe(TaskType::Command);
+});
+
+it('constructs the Artisan application when accessed outside the console', function (): void {
+    $property = new ReflectionProperty($this->app::class, 'isRunningInConsole');
+    $property->setAccessible(true);
+    $property->setValue($this->app, false);
+
+    // `ApplicationBuilder::withSchedule()` registers its closure through
+    // `Artisan::starting(...)`, which only fires when the console Application is
+    // actually constructed. Asserting our own starting callback fires proves
+    // `schedule()` triggers that construction from a non-console context.
+    $started = false;
+    ConsoleApplication::starting(function () use (&$started): void {
+        $started = true;
+    });
+
+    try {
+        expect($this->inspector->schedule())->toBe($this->schedule)
+            ->and($started)->toBeTrue();
+    } finally {
+        ConsoleApplication::forgetBootstrappers();
+    }
 });
