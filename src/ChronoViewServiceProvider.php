@@ -8,6 +8,7 @@ use Grazulex\ChronoView\Commands\CheckCommand;
 use Grazulex\ChronoView\Commands\InstallCommand;
 use Grazulex\ChronoView\Commands\PruneCommand;
 use Grazulex\ChronoView\Commands\SyncCommand;
+use Grazulex\ChronoView\Http\Middleware\Authorize;
 use Grazulex\ChronoView\Listeners\ScheduleEventSubscriber;
 use Grazulex\ChronoView\Support\Heartbeat;
 use Grazulex\ChronoView\Support\MissedRunDetector;
@@ -15,6 +16,7 @@ use Grazulex\ChronoView\Support\Recorder;
 use Grazulex\ChronoView\Support\ScheduleInspector;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Contracts\Events\Dispatcher;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 
 final class ChronoViewServiceProvider extends ServiceProvider
@@ -54,6 +56,16 @@ final class ChronoViewServiceProvider extends ServiceProvider
         }
 
         $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
+
+        $this->app['router']->aliasMiddleware('chronoview.auth', Authorize::class);
+
+        Route::group([
+            'domain' => config('chronoview.domain'),
+            'prefix' => config('chronoview.path', 'chronoview'),
+            'as' => 'chronoview.',
+        ], fn () => $this->loadRoutesFrom(__DIR__ . '/../routes/web.php'));
+
+        $this->loadViewsFrom(__DIR__ . '/../resources/views', 'chronoview');
 
         /** @var Dispatcher $events */
         $events = $this->app['events'];
