@@ -14,11 +14,6 @@ final class ChronoViewFakeJob implements ShouldQueue
 }
 
 beforeEach(function (): void {
-    // Testbench's skeleton config defaults app.timezone to 'UTC', which the
-    // Schedule constructor forwards to every Event. Reset it to null so a
-    // task with no explicit ->timezone() call round-trips to null, matching
-    // a real application that leaves app.timezone unset.
-    config(['app.timezone' => null]);
     $this->schedule = app(Schedule::class);
 });
 
@@ -26,12 +21,16 @@ it('describes an artisan command by its normalized command string', function ():
     $event = $this->schedule->command('inspire')->everyFiveMinutes();
     $definition = TaskDefinition::fromEvent($event);
 
+    // Kernel::resolveConsoleSchedule() builds the Schedule with
+    // config('app.schedule_timezone', config('app.timezone')), so an event
+    // with no explicit ->timezone() call inherits the application timezone
+    // ('UTC' in Testbench, and in every stock Laravel app).
     expect($definition->type)->toBe(TaskType::Command)
         ->and($definition->name)->toBe('artisan inspire')
         ->and($definition->command)->toBe('artisan inspire')
         ->and($definition->expression)->toBe('*/5 * * * *')
-        ->and($definition->timezone)->toBeNull()
-        ->and($definition->key())->toBe(sha1('command|artisan inspire|*/5 * * * *|'));
+        ->and($definition->timezone)->toBe('UTC')
+        ->and($definition->key())->toBe(sha1('command|artisan inspire|*/5 * * * *|UTC'));
 });
 
 it('keeps command arguments in the normalized command', function (): void {
