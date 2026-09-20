@@ -82,7 +82,7 @@ final class ChronoViewServiceProvider extends ServiceProvider
 
         if (config('chronoview.check.enabled', true)) {
             $this->callAfterResolving(Schedule::class, function (Schedule $schedule): void {
-                $schedule->command('chronoview:check')->everyMinute()->withoutOverlapping()->name('chronoview:check');
+                $schedule->command('chronoview:check')->everyMinute()->name('chronoview:check');
                 $schedule->command('chronoview:prune')->daily()->onOneServer()->name('chronoview:prune');
             });
         }
