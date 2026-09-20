@@ -17,3 +17,4 @@ All notable changes to this project will be documented in this file.
 - commands `chronoview:install`, `chronoview:sync`, `chronoview:check`, `chronoview:prune`
 - Resume records `resumed_at` so a task freshly unpaused is never flagged with a false missed run for the minutes it was paused
 - embedded Alpine.js 3.17.3, no CDN
+- email allow-list authorization (`CHRONOVIEW_ALLOWED_EMAILS`, `CHRONOVIEW_GUARD`)

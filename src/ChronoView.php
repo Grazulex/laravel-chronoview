@@ -9,6 +9,7 @@ use Grazulex\ChronoView\Enums\RunStatus;
 use Grazulex\ChronoView\Models\TaskRun;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 
 final class ChronoView
@@ -32,7 +33,30 @@ final class ChronoView
             return Gate::forUser($request->user())->check('viewChronoView');
         }
 
+        $allowed = $this->allowedEmails();
+
+        if ($allowed !== []) {
+            $user = Auth::guard(config('chronoview.auth.guard'))->user();
+            $email = is_object($user) && isset($user->email) ? mb_strtolower((string) $user->email) : null;
+
+            return $email !== null && in_array($email, $allowed, true);
+        }
+
         return app()->environment('local');
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public function allowedEmails(): array
+    {
+        $raw = config('chronoview.auth.allowed_emails');
+        $list = is_array($raw) ? $raw : explode(',', (string) $raw);
+
+        return array_values(array_filter(array_map(
+            fn (mixed $email): string => mb_strtolower(trim((string) $email)),
+            $list,
+        )));
     }
 
     public function enabled(): bool

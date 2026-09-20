@@ -41,15 +41,19 @@ php artisan chronoview:install
 
 That's it. Keep your usual cron entry (`* * * * * php artisan schedule:run`) — ChronoView schedules its own `chronoview:check` (every minute) and `chronoview:prune` (daily).
 
-Open `/chronoview`. In `local` it is open; elsewhere, authorise access like Horizon:
+Open `/chronoview`. In `local` it is open; elsewhere, authorise access like Horizon — see [Authorization](#authorization).
 
-```php
-// AppServiceProvider::boot()
-ChronoView::auth(fn ($request) => $request->user()?->isAdmin());
+## Authorization
 
-// or with a gate
-Gate::define('viewChronoView', fn (User $user) => $user->isAdmin());
-```
+ChronoView is open in the `local` environment and returns 403 everywhere else until you choose one of these (checked in this order):
+
+1. A callback — `ChronoView::auth(fn ($request) => $request->user()?->isAdmin());`
+2. A gate — `Gate::define('viewChronoView', fn (User $user) => $user->isAdmin());`
+3. **An allow-list of emails, no code needed** — in `.env`:
+   `CHRONOVIEW_ALLOWED_EMAILS=jms@example.com,ops@example.com`
+   The visitor must be authenticated (default guard, or `CHRONOVIEW_GUARD`) with a listed email — this also applies in `local`.
+
+Unauthenticated visitors get a 403 (not a login redirect), like Horizon.
 
 ## Screens
 
@@ -88,7 +92,7 @@ If the cron itself stops, `chronoview:check` stops too — that failure is caugh
 
 Migrations are loaded automatically (`loadMigrationsFrom`); `chronoview:install` publishes the config, runs `migrate` and calls `chronoview:sync`.
 
-Access is checked by `ChronoView::check()`: your `ChronoView::auth()` callback if you registered one, otherwise the `viewChronoView` gate if it is defined, otherwise the `local` environment only.
+Access is checked by `ChronoView::check()`: your `ChronoView::auth()` callback if you registered one, otherwise the `viewChronoView` gate if it is defined, otherwise the email allow-list if `chronoview.auth.allowed_emails` is configured, otherwise the `local` environment only. See [Authorization](#authorization).
 
 ## Configuration
 
@@ -99,7 +103,9 @@ Publish the config with `php artisan vendor:publish --tag=chronoview-config` (do
 | `enabled` | `true` (`CHRONOVIEW_ENABLED`) | Master switch. `false` disables routes, listeners and the internal schedule entirely. |
 | `path` | `chronoview` (`CHRONOVIEW_PATH`) | URI prefix of the dashboard. |
 | `domain` | `null` (`CHRONOVIEW_DOMAIN`) | Optional domain for the dashboard routes. |
-| `middleware` | `['web', 'chronoview.auth']` | Middleware stack of the dashboard routes. `chronoview.auth` enforces `ChronoView::auth()` / the `viewChronoView` gate / the `local` environment. |
+| `middleware` | `['web', 'chronoview.auth']` | Middleware stack of the dashboard routes. `chronoview.auth` enforces `ChronoView::auth()` / the `viewChronoView` gate / the email allow-list / the `local` environment. |
+| `auth.allowed_emails` | `null` (`CHRONOVIEW_ALLOWED_EMAILS`) | Comma-separated (env) or array (published config) list of emails allowed to access the dashboard — see [Authorization](#authorization). |
+| `auth.guard` | `null` (`CHRONOVIEW_GUARD`) | Auth guard used to resolve the user for `auth.allowed_emails`. `null` means the default guard. |
 | `refresh` | `15` (`CHRONOVIEW_REFRESH`) | Auto-refresh interval of the dashboard pages, in seconds. `0` disables it. |
 | `connection` | `null` (`CHRONOVIEW_DB_CONNECTION`) | Database connection used for ChronoView's tables. `null` means the app's default connection. |
 | `table_prefix` | `chronoview_` | Prefix of every table ChronoView creates. |

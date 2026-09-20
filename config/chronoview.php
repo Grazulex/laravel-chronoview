@@ -21,6 +21,20 @@ return [
     'middleware' => ['web', 'chronoview.auth'],
 
     /*
+     * Email allow-list authorization (Horizon-style, no code required).
+     * When `allowed_emails` is set, the dashboard requires an authenticated
+     * user (resolved from `guard`, null = default guard) whose email is
+     * listed — this applies even in the `local` environment.
+     */
+    'auth' => [
+        // Comma-separated list (env) or array (published config). When set, the
+        // dashboard requires an authenticated user whose email is listed — even in local.
+        'allowed_emails' => env('CHRONOVIEW_ALLOWED_EMAILS'),
+        // Auth guard used to resolve the user (null = default guard).
+        'guard' => env('CHRONOVIEW_GUARD'),
+    ],
+
+    /*
      * Auto-refresh interval of the pages, in seconds. 0 disables it.
      */
     'refresh' => (int) env('CHRONOVIEW_REFRESH', 15),
