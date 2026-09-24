@@ -76,3 +76,14 @@ it('reports and stops when the task disappeared from the schedule', function ():
 
     expect(TaskRun::count())->toBe(0);
 });
+
+it('refuses to run a task restricted to another environment', function (): void {
+    $ran = false;
+    $event = $this->schedule->call(function () use (&$ran): void {
+        $ran = true;
+    })->monthly()->name('production only')->environments(['production']);
+
+    dispatch_sync(new RunScheduledTask(TaskDefinition::fromEvent($event)->key()));
+
+    expect($ran)->toBeFalse()->and(TaskRun::count())->toBe(0);
+});

@@ -70,6 +70,29 @@ final class ScheduleInspector
         return $this->events()->first(fn (Event $event): bool => TaskDefinition::fromEvent($event)->key() === $key);
     }
 
+    /**
+     * Whether `schedule:run` would consider the event here: tasks restricted
+     * with `->environments()` are never due, run or skipped elsewhere.
+     */
+    public function runsInCurrentEnvironment(Event $event): bool
+    {
+        return $event->runsInEnvironment($this->app->environment());
+    }
+
+    /**
+     * Keys of the tasks restricted to other environments than the current one.
+     *
+     * @return array<int, string>
+     */
+    public function keysOutsideCurrentEnvironment(): array
+    {
+        return $this->events()
+            ->reject(fn (Event $event): bool => $this->runsInCurrentEnvironment($event))
+            ->map(fn (Event $event): string => TaskDefinition::fromEvent($event)->key())
+            ->values()
+            ->all();
+    }
+
     public function decorate(Schedule $schedule): void
     {
         foreach ($schedule->events() as $event) {

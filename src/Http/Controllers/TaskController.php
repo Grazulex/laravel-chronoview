@@ -7,6 +7,7 @@ namespace Grazulex\ChronoView\Http\Controllers;
 use Grazulex\ChronoView\Enums\Health;
 use Grazulex\ChronoView\Enums\RunStatus;
 use Grazulex\ChronoView\Models\MonitoredTask;
+use Grazulex\ChronoView\Support\ScheduleInspector;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -39,8 +40,10 @@ final class TaskController
         ]);
     }
 
-    public function show(MonitoredTask $task): View
+    public function show(MonitoredTask $task, ScheduleInspector $inspector): View
     {
+        $event = $inspector->find($task->key);
+
         $since = Carbon::now()->subDays(7);
         $week = $task->runs()->since($since)->select(['id', 'status', 'duration_ms'])->get();
         $finished = $week->whereIn('status', [RunStatus::Success, RunStatus::Failed]);
@@ -77,6 +80,7 @@ final class TaskController
                 ->select(['id', 'task_id', 'status', 'trigger', 'expected_at', 'started_at', 'finished_at', 'duration_ms', 'exit_code', 'hostname'])
                 ->latest('id')->paginate(25)->withQueryString(),
             'next' => $task->isPaused() ? null : $task->nextRunAt(),
+            'runsHere' => $event === null || $inspector->runsInCurrentEnvironment($event),
         ]);
     }
 }

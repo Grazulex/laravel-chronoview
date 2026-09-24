@@ -7,6 +7,8 @@ use Grazulex\ChronoView\Enums\TaskType;
 use Grazulex\ChronoView\Models\MonitoredTask;
 use Grazulex\ChronoView\Models\TaskRun;
 use Grazulex\ChronoView\Support\MissedRunDetector;
+use Grazulex\ChronoView\Support\TaskDefinition;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Carbon;
 
 function seenTask(array $attributes = []): MonitoredTask
@@ -152,4 +154,16 @@ it('closes stale running runs as failed', function (): void {
     expect($closed)->toHaveCount(1)
         ->and($closed->first()?->status)->toBe(RunStatus::Failed)
         ->and(TaskRun::where('status', RunStatus::Running->value)->count())->toBe(1);
+});
+
+it('ignores tasks restricted to another environment', function (): void {
+    $event = app(Schedule::class)
+        ->call(fn () => null)->name('probe')->everyFiveMinutes()->environments(['production']);
+    $definition = TaskDefinition::fromEvent($event);
+    seenTask($definition->toArray() + ['key' => $definition->key()]);
+    Carbon::setTestNow('2026-09-20 10:06:30');
+    MonitoredTask::query()->update(['seen_at' => now()]);
+
+    expect($this->detector->detect())->toBeEmpty()
+        ->and(TaskRun::count())->toBe(0);
 });

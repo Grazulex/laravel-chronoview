@@ -38,6 +38,12 @@ final class RunScheduledTask implements ShouldQueue
             return;
         }
 
+        if (! $inspector->runsInCurrentEnvironment($event)) {
+            report(new RuntimeException("ChronoView: task [{$this->taskKey}] is not scheduled in the [{$app->environment()}] environment."));
+
+            return;
+        }
+
         $recorder->starting($event, RunTrigger::Manual);
         $start = microtime(true);
 

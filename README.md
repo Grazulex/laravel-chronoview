@@ -141,7 +141,7 @@ Event::listen(SchedulerDown::class, fn ($e) => /* $e->hostname, $e->lastBeatAt *
 
 ## FAQ
 
-**Why is a run marked missed?** No run and no skip was recorded for that due minute within `check.grace` seconds (90 by default) and the task was already known before that minute. Typical causes: the cron stopped (see the heartbeat banner), the task is filtered by `environments()` on a server where `record.skipped` is disabled, or `schedule:run` executes foreground tasks sequentially, so a task whose predecessor runs longer than `grace + 60 s` is flagged missed and then runs anyway — give long tasks `runInBackground()` or raise `check.grace`.
+**Why is a run marked missed?** No run and no skip was recorded for that due minute within `check.grace` seconds (90 by default) and the task was already known before that minute. Typical causes: the cron stopped (see the heartbeat banner), or `schedule:run` executes foreground tasks sequentially, so a task whose predecessor runs longer than `grace + 60 s` is flagged missed and then runs anyway — give long tasks `runInBackground()` or raise `check.grace`. Tasks restricted with `environments()` are never flagged missed outside their environments, and **Run now** refuses them there.
 
 **A task is still `running` after hours.** `chronoview:check` closes runs older than `check.stale_after` (6 h) as failed. Lower it if your tasks are always short.
 

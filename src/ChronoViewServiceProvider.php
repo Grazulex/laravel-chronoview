@@ -42,7 +42,10 @@ final class ChronoViewServiceProvider extends ServiceProvider
             $app->make(Recorder::class),
         ));
 
-        $this->app->singleton(MissedRunDetector::class, fn ($app): MissedRunDetector => new MissedRunDetector($app->make(Recorder::class)));
+        $this->app->singleton(MissedRunDetector::class, fn ($app): MissedRunDetector => new MissedRunDetector(
+            $app->make(Recorder::class),
+            $app->make(ScheduleInspector::class),
+        ));
     }
 
     public function boot(): void

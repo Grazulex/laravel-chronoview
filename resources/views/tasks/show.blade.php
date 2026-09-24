@@ -25,12 +25,15 @@
                     @if ($task->on_one_server)<span>one server</span>@endif
                 </span>
             </div>
+            @unless ($runsHere)
+                <p class="cv-muted">Not scheduled in this environment ({{ app()->environment() }}) — the scheduler never runs it here.</p>
+            @endunless
             @if ($task->isPaused())
                 <p class="cv-muted">Paused {{ Format::ago($task->paused_at) }} — the scheduler skips this task until it is resumed.</p>
             @endif
         </div>
         <div class="cv-actions">
-            @if (config('chronoview.actions.run_now'))
+            @if (config('chronoview.actions.run_now') && $runsHere)
                 <form method="post" action="{{ route('chronoview.tasks.run', $task) }}">@csrf
                     <button class="cv-btn cv-btn-primary" type="submit">▶ Run now</button>
                 </form>

@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## Unreleased
+
+### Bug Fixes
+
+- Run now refuses a task restricted with `environments()` outside its environments, and the button is hidden there ([#3](https://github.com/Grazulex/laravel-chronoview/issues/3))
+- tasks restricted with `environments()` are no longer flagged missed in the other environments; the task page says they are not scheduled here ([#4](https://github.com/Grazulex/laravel-chronoview/issues/4))
+
 ## [0.1.0](https://github.com/Grazulex/laravel-chronoview/releases/tag/v0.1.0) (2026-09-20)
 
 ### Features
