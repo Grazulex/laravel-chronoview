@@ -18,6 +18,12 @@ final class ActionController
     {
         abort_unless((bool) config('chronoview.actions.run_now', true), 403);
 
+        $event = $this->inspector->find($task->key);
+
+        if ($event !== null && ! $this->inspector->runsInCurrentEnvironment($event)) {
+            return $this->back($task, "“{$task->name}” is not scheduled in the " . app()->environment() . ' environment and cannot be run here.', 'error');
+        }
+
         RunScheduledTask::dispatch($task->key)
             ->onConnection(config('chronoview.actions.queue_connection'))
             ->onQueue(config('chronoview.actions.queue'));

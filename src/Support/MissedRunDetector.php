@@ -17,7 +17,10 @@ final class MissedRunDetector
 {
     private const int SEEN_WITHIN_SECONDS = 180;
 
-    public function __construct(private readonly Recorder $recorder) {}
+    public function __construct(
+        private readonly Recorder $recorder,
+        private readonly ScheduleInspector $inspector,
+    ) {}
 
     /**
      * @return Collection<int, TaskRun>
@@ -31,6 +34,8 @@ final class MissedRunDetector
         $tasks = MonitoredTask::query()
             ->active()
             ->where('seen_at', '>=', $now->subSeconds(self::SEEN_WITHIN_SECONDS))
+            // schedule:run never fires (nor skips) tasks restricted to other environments.
+            ->whereNotIn('key', $this->inspector->keysOutsideCurrentEnvironment())
             ->get();
 
         foreach ($tasks as $task) {

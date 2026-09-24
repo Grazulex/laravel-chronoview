@@ -62,3 +62,29 @@ it('requires authorization for actions', function (): void {
 
     $this->post(route('chronoview.tasks.pause', $this->task))->assertForbidden();
 });
+
+it('refuses a manual run of a task restricted to another environment', function (): void {
+    Queue::fake();
+    $event = app(Schedule::class)->command('inspire')->daily()->environments(['production']);
+    $definition = TaskDefinition::fromEvent($event);
+    $task = MonitoredTask::create($definition->toArray() + ['key' => $definition->key(), 'seen_at' => now()]);
+
+    $this->post(route('chronoview.tasks.run', $task))
+        ->assertRedirect(route('chronoview.tasks.show', $task))
+        ->assertSessionHas('chronoview.flash.type', 'error');
+
+    Queue::assertNothingPushed();
+});
+
+it('hides Run now for a task restricted to another environment', function (): void {
+    $event = app(Schedule::class)->command('inspire')->daily()->environments(['production']);
+    $definition = TaskDefinition::fromEvent($event);
+    $task = MonitoredTask::create($definition->toArray() + ['key' => $definition->key(), 'seen_at' => now()]);
+
+    $this->get(route('chronoview.tasks.show', $task))
+        ->assertOk()
+        ->assertDontSee('Run now')
+        ->assertSee('Not scheduled in this environment (testing)');
+
+    $this->get(route('chronoview.tasks.show', $this->task))->assertSee('Run now');
+});
