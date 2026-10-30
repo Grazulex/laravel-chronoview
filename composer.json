@@ -1,7 +1,16 @@
 {
     "name": "grazulex/laravel-chronoview",
     "description": "Horizon-style dashboard for the Laravel scheduler: every run, every failure, every missed run",
-    "keywords": ["laravel", "scheduler", "cron", "monitoring", "dashboard", "schedule", "missed-runs", "heartbeat"],
+    "keywords": [
+        "laravel",
+        "scheduler",
+        "cron",
+        "monitoring",
+        "dashboard",
+        "schedule",
+        "missed-runs",
+        "heartbeat"
+    ],
     "homepage": "https://github.com/grazulex/laravel-chronoview",
     "license": "MIT",
     "authors": [
@@ -14,7 +23,7 @@
     ],
     "require": {
         "php": "^8.4",
-        "dragonmantank/cron-expression": "^3.3",
+        "dragonmantank/cron-expression": "^3.6",
         "illuminate/console": "^12.0|^13.0",
         "illuminate/contracts": "^12.0|^13.0",
         "illuminate/database": "^12.0|^13.0",
@@ -23,16 +32,16 @@
         "illuminate/routing": "^12.0|^13.0",
         "illuminate/support": "^12.0|^13.0",
         "illuminate/view": "^12.0|^13.0",
-        "nesbot/carbon": "^3.10"
+        "nesbot/carbon": "^3.15"
     },
     "require-dev": {
-        "larastan/larastan": "^3.4",
-        "laravel/pint": "^1.22",
+        "larastan/larastan": "^3.13",
+        "laravel/pint": "^1.32",
         "orchestra/testbench": "^10.2|^11.0",
-        "pestphp/pest": "^3.8|^4.0",
-        "pestphp/pest-plugin-laravel": "^3.2|^4.0",
-        "phpstan/phpstan": "^2.1",
-        "rector/rector": "^2.0"
+        "pestphp/pest": "^3.8|^4.7",
+        "pestphp/pest-plugin-laravel": "^3.2|^4.1",
+        "phpstan/phpstan": "^2.3",
+        "rector/rector": "^2.8"
     },
     "autoload": {
         "psr-4": {
@@ -45,7 +54,10 @@
         }
     },
     "scripts": {
-        "post-autoload-dump": ["@clear", "@prepare"],
+        "post-autoload-dump": [
+            "@clear",
+            "@prepare"
+        ],
         "clear": "@php vendor/bin/testbench package:purge-skeleton --ansi",
         "prepare": "@php vendor/bin/testbench package:discover --ansi",
         "build": "@php vendor/bin/testbench workbench:build --ansi",
@@ -59,18 +71,32 @@
         "test:lint": "pint --test -v",
         "test:types": "phpstan analyse",
         "test:unit": "pest --colors=always",
-        "test": ["@test:lint", "@test:types", "@test:unit"],
-        "full": ["@test:lint", "@test:types", "@test:unit"]
+        "test": [
+            "@test:lint",
+            "@test:types",
+            "@test:unit"
+        ],
+        "full": [
+            "@test:lint",
+            "@test:types",
+            "@test:unit"
+        ]
     },
     "extra": {
         "laravel": {
-            "providers": ["Grazulex\\ChronoView\\ChronoViewServiceProvider"],
-            "aliases": {"ChronoView": "Grazulex\\ChronoView\\Facades\\ChronoView"}
+            "providers": [
+                "Grazulex\\ChronoView\\ChronoViewServiceProvider"
+            ],
+            "aliases": {
+                "ChronoView": "Grazulex\\ChronoView\\Facades\\ChronoView"
+            }
         }
     },
     "config": {
         "sort-packages": true,
-        "allow-plugins": {"pestphp/pest-plugin": true}
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
     },
     "minimum-stability": "stable",
     "prefer-stable": true
